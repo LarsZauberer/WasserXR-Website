@@ -1,0 +1,53 @@
+---
+title: WasserXR
+description: A dynamic XR Engine to help you stay in the flow
+template: splash # Remove or comment out this line to display the site sidebar on this page.
+hero:
+  tagline: A dynamic XR Engine to help you stay in the flow
+  image:
+    file: ../../assets/houston.webp
+  actions:
+    - text: Getting Started
+      link: /getting_started/
+      icon: rocket
+    - text: Examples
+      link: /examples/
+      icon: right-arrow
+      variant: secondary
+    - text: API Docs
+      link: https://starlight.astro.build
+      icon: external
+      variant: minimal
+---
+
+import { Card, CardGrid, Aside } from '@astrojs/starlight/components';
+
+<Aside type="caution" title="Early Access" icon="warning">
+WasserXR is currently in it's very early development phase. A lot of the promised features might **not fully exist** and **breaking changes might occur**. Still we would be happy to receive some feedback about engine.
+</Aside>
+
+## Demo
+
+<div style="display: flex; justify-content: center;">
+<iframe width="1024" height="800" src="https://www.youtube.com/embed/dQw4w9WgXcQ?si=6UqEUNTtlQvEbeTc" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+</div>
+
+## Features
+
+<CardGrid stagger>
+	<Card title="High Iteration Speeds" icon="seti:clock">
+    The ECS system of WasserXR is highly dynamic. Code of any system or component can be recompiled at runtime and directly hot reloaded.
+	</Card>
+	<Card title="Use any Language" icon="seti:html">
+    The ECS system allows you to write any system or component in the language that is compatible with the C-ABI. You just link against the main ECS library and you can freely code.
+	</Card>
+	<Card title="Easy and Maintainable" icon="open-book">
+    WasserXR is made to have easy and modular code by design. Therefore, it is easy to learn for beginners while also being extensible for advanced users.
+	</Card>
+	<Card title="Ready to Build" icon="rocket">
+    WasserXR already comes with a wide variety of components and systems that make your life a lot easier to build good XR applications.
+	</Card>
+	<Card title="Open Source" icon="github">
+    The engine is fully open source so you can go in the code and change what you need
+	</Card>
+</CardGrid>
