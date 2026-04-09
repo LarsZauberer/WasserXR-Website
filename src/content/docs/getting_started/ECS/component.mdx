@@ -1,0 +1,390 @@
+---
+title: Component
+description: Creating custom components in WasserXR
+sidebar:
+  order: 4
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+Components are pure data containers in ECS. They hold information about entities but contain no logic themselves. Think of components as the attributes that define what an entity is and what it can do.
+
+## What is a Component?
+
+A component is simply a C struct that contains related data. For example, a `Transform` component might store position, rotation, and scale, while a `Health` component might store current and maximum health values.
+
+To make a component work with WasserXR's ECS, you need to provide three functions:
+- **Creator**: Allocates and initializes a new component instance
+- **Destroyer**: Frees a component instance and cleans up resources
+- **Schema**: Defines the component's fields so systems can access them
+
+## Creating Your First Component
+
+Let's create a simple `Health` component step by step.
+
+### Step 1: Define the Component Struct
+
+Start with a simple struct containing your data:
+
+```c
+// Health.h
+typedef struct Health {
+    int current;
+    int maximum;
+} Health;
+```
+
+Keep it simple - components are just data, no methods or logic.
+
+### Step 2: Implement the Creator Function
+
+The creator allocates memory and initializes the component:
+
+```c
+// Health.c
+#include <stdlib.h>
+
+void *ts_create_Health() {
+    Health *health = malloc(sizeof(Health));
+    if (!health) return NULL;
+    
+    // Initialize with sensible defaults
+    health->current = 100;
+    health->maximum = 100;
+    
+    return health;
+}
+```
+
+<Aside type="caution" title="Function Naming Requirement" icon="warning">
+The `ts_` prefix is **required** for all component functions. WasserXR's plugin loader searches for functions with these exact prefixes: `ts_create_`, `ts_destroy_`, and `ts_schema_`. Your component name (like `Health`) can be anything, but the function names must start with `ts_`.
+</Aside>
+
+### Step 3: Implement the Destroyer Function
+
+The destroyer frees the component's memory:
+
+```c
+void ts_destroy_Health(void *ptr) {
+    free(ptr);
+}
+```
+
+If your component allocates additional resources (like strings or arrays), free them here before freeing the component itself.
+
+### Step 4: Implement the Schema Function
+
+The schema function tells WasserXR about the component's fields. We'll start with a manual approach:
+
+```c
+void ts_schema_Health(TS_Component_Schema *schema) {
+    // We'll fill this in the next section
+}
+```
+
+Before we implement the schema, let's understand how field access works.
+
+## Accessing Fields
+
+WasserXR needs to know about your component's fields for two reasons:
+1. Systems can access them generically using `ts_get()` and `ts_set()`
+2. The ECS can serialize/deserialize components for saving and loading
+
+### Getter and Setter Functions
+
+For each field, you need a getter and setter function. Let's do this manually first:
+
+```c
+// Getter for 'current' field
+const void *get_Health_current(const void *ptr) {
+    const Health *health = ptr;
+    return &health->current;
+}
+
+// Setter for 'current' field
+void set_Health_current(void *ptr, const void *data) {
+    Health *health = ptr;
+    if (data) {
+        memcpy(&health->current, data, sizeof(int));
+    }
+}
+```
+
+The getter returns a pointer to the field (which is why it's `const void *` - the caller shouldn't modify it directly). The setter copies the new value into the field.
+
+<Aside type="note" title="Getter/Setter Naming" icon="information">
+Unlike the main component functions (`ts_create_`, `ts_destroy_`, `ts_schema_`), getter and setter functions **don't require** the `ts_` prefix. You can name them however you like (e.g., `get_Health_current`, `Health_get_current`, etc.) since you pass them directly to the schema registration.
+</Aside>
+
+<Aside type="caution" title="Ownership" icon="warning">
+The getter returns a pointer to data **owned by the ECS**. Don't modify it directly - use the setter instead. The setter **copies** the data, so the caller retains ownership of the original.
+</Aside>
+
+Now repeat this for the `maximum` field:
+
+```c
+const void *get_Health_maximum(const void *ptr) {
+    const Health *health = ptr;
+    return &health->maximum;
+}
+
+void set_Health_maximum(void *ptr, const void *data) {
+    Health *health = ptr;
+    if (data) {
+        memcpy(&health->maximum, data, sizeof(int));
+    }
+}
+```
+
+### Registering Fields in the Schema
+
+Now we can complete the schema function:
+
+```c
+void ts_schema_Health(TS_Component_Schema *schema) {
+    // Create field definition for 'current'
+    TS_Component_Field *current_field = ts_create_component_field(
+        "current",                  // field name
+        TS_L,                      // type (TS_L = long/integer)
+        get_Health_current,        // getter function
+        set_Health_current,        // setter function
+        NULL,                      // serializer (optional)
+        NULL                       // deserializer (optional)
+    );
+    ts_add_field_to_component_schema(schema, current_field);
+    
+    // Create field definition for 'maximum'
+    TS_Component_Field *maximum_field = ts_create_component_field(
+        "maximum",
+        TS_L,
+        get_Health_maximum,
+        set_Health_maximum,
+        NULL,
+        NULL
+    );
+    ts_add_field_to_component_schema(schema, maximum_field);
+}
+```
+
+### Field Types
+
+WasserXR supports these primitive types:
+- `TS_L` - Integer (long)
+- `TS_F` - Float
+- `TS_C` - Character
+- `TS_S` - String (null-terminated char*)
+- `TS_BLOB` - Binary data (arbitrary pointer)
+- `TS_BLOB_ARRAY` - Array of binary data
+
+Choose the type that matches your field's data.
+
+## Macros
+
+Writing getters, setters, and schema registration by hand is tedious and error-prone. WasserXR provides macros to automate this boilerplate.
+
+### Why Use Macros?
+
+Compare writing everything manually (as we just did) versus using macros:
+
+```c
+// Manual: ~40 lines of repetitive code for two fields
+// With macros: ~8 lines
+
+TS_BASIC_ACCESS(Health, current, &component->current, sizeof(int));
+TS_BASIC_ACCESS(Health, maximum, &component->maximum, sizeof(int));
+
+void ts_schema_Health(TS_Component_Schema *schema) {
+    TS_SCHEMA_FIELD_FULL(Health, TS_L, current);
+    TS_SCHEMA_FIELD_FULL(Health, TS_L, maximum);
+}
+```
+
+Much cleaner! Let's learn the key macros.
+
+### Basic Access Macros
+
+`TS_BASIC_ACCESS(component_type, field_name, field_expr, field_size)` generates both a getter and setter:
+
+```c
+// Generates: get_Health_current() and set_Health_current()
+TS_BASIC_ACCESS(Health, current, &component->current, sizeof(int));
+TS_BASIC_ACCESS(Health, maximum, &component->maximum, sizeof(int));
+```
+
+Parameters:
+- `component_type` - Your component's type name
+- `field_name` - The field's name
+- `field_expr` - Expression that evaluates to the field's address
+- `field_size` - Size of the field in bytes
+
+If you only need a getter (read-only field), use `TS_BASIC_GETTER` instead.
+
+### String Field Macros
+
+Strings need special handling for memory management. Use `TS_STRING_ACCESS`:
+
+```c
+typedef struct Item {
+    char *name;
+    int value;
+} Item;
+
+// String field with automatic memory management
+TS_STRING_ACCESS(Item, name, component->name);
+
+// Regular integer field
+TS_BASIC_ACCESS(Item, value, &component->value, sizeof(int));
+```
+
+The string macros automatically handle freeing old strings and allocating new ones.
+
+### Schema Registration Macros
+
+`TS_SCHEMA_FIELD_FULL(component_type, field_type, field_name)` registers a field that has getters and setters:
+
+```c
+void schema_Health(TS_Component_Schema *schema) {
+    TS_SCHEMA_FIELD_FULL(Health, TS_L, current);
+    TS_SCHEMA_FIELD_FULL(Health, TS_L, maximum);
+}
+```
+
+This assumes you've used `TS_BASIC_ACCESS` to generate the getter/setter functions following the standard naming convention.
+
+For read-only fields, use `TS_SCHEMA_FIELD_GET`:
+
+```c
+// Only generate getter, field is read-only
+TS_BASIC_GETTER(Health, current, &component->current, sizeof(int));
+
+void schema_Health(TS_Component_Schema *schema) {
+    TS_SCHEMA_FIELD_GET(Health, TS_L, current);
+}
+```
+
+### Serialization Macros
+
+If you want your components to be saveable, add serialization:
+
+```c
+// Generate getters, setters, serializers, and deserializers
+TS_BASIC_ACCESS(Health, current, &component->current, sizeof(int));
+TS_BASIC_SERIALIZERS(Health, current, &component->current, sizeof(int));
+
+TS_BASIC_ACCESS(Health, maximum, &component->maximum, sizeof(int));
+TS_BASIC_SERIALIZERS(Health, maximum, &component->maximum, sizeof(int));
+```
+
+Then update your schema registration to include the serializers:
+
+```c
+void ts_schema_Health(TS_Component_Schema *schema) {
+    TS_SCHEMA_FIELD_FULL(Health, TS_L, current);
+    TS_SCHEMA_FIELD_FULL(Health, TS_L, maximum);
+}
+```
+
+The `FULL` suffix means "use all functions" - getter, setter, serializer, and deserializer.
+
+## Example: Complete Component with Macros
+
+Here's a complete, production-ready component using macros:
+
+```c
+// Velocity.h
+#ifndef VELOCITY_H
+#define VELOCITY_H
+
+typedef struct Velocity {
+    float x;
+    float y;
+    float z;
+} Velocity;
+
+void *ts_create_Velocity();
+void ts_destroy_Velocity(void *ptr);
+void ts_schema_Velocity(TS_Component_Schema *schema);
+
+#endif
+```
+
+```c
+// Velocity.c
+#include "Velocity.h"
+#include <stdlib.h>
+#include <string.h>
+
+void *ts_create_Velocity() {
+    Velocity *v = malloc(sizeof(Velocity));
+    if (!v) return NULL;
+    
+    v->x = 0.0f;
+    v->y = 0.0f;
+    v->z = 0.0f;
+    
+    return v;
+}
+
+void ts_destroy_Velocity(void *ptr) {
+    free(ptr);
+}
+
+// Generate getters, setters, and serializers for all fields
+TS_BASIC_ACCESS(Velocity, x, &component->x, sizeof(float));
+TS_BASIC_SERIALIZERS(Velocity, x, &component->x, sizeof(float));
+
+TS_BASIC_ACCESS(Velocity, y, &component->y, sizeof(float));
+TS_BASIC_SERIALIZERS(Velocity, y, &component->y, sizeof(float));
+
+TS_BASIC_ACCESS(Velocity, z, &component->z, sizeof(float));
+TS_BASIC_SERIALIZERS(Velocity, z, &component->z, sizeof(float));
+
+void ts_schema_Velocity(TS_Component_Schema *schema) {
+    TS_SCHEMA_FIELD_FULL(Velocity, TS_F, x);
+    TS_SCHEMA_FIELD_FULL(Velocity, TS_F, y);
+    TS_SCHEMA_FIELD_FULL(Velocity, TS_F, z);
+}
+```
+
+That's it! This component is ready to use in your plugin.
+
+## Using Your Component
+
+Once compiled into a plugin and loaded, you can use your component:
+
+```c
+// Create entity and add component
+TS_Entity player = ts_add_entity(scene);
+Velocity *vel = ts_add_component(scene, player, "Velocity");
+
+// Direct access right after creation
+vel->x = 5.0f;
+vel->y = 0.0f;
+vel->z = 2.0f;
+
+// Or use generic access from anywhere
+ts_set(scene, vel, "x", &(float){10.0f});
+
+float x = *(float*)ts_get(scene, vel, "x");
+printf("Velocity X: %f\n", x);
+```
+
+## Best Practices
+
+**Keep components simple.** Components should only hold data, never logic. If you find yourself wanting to add methods, that logic probably belongs in a system.
+
+**Use meaningful names.** A component called `Data` tells you nothing. `Transform`, `Health`, and `Velocity` are clear and descriptive.
+
+**Don't make components too large.** If a component has 20+ fields, consider splitting it into multiple smaller components. Smaller components are more reusable.
+
+**Initialize sensibly.** In your creator function, set fields to reasonable defaults so components work out of the box.
+
+**Use macros for production code.** Manual getter/setter code is fine for learning, but macros reduce errors and save time in real projects.
+
+<Aside type="tip" title="Start Simple" icon="rocket">
+When creating a new component, start without macros to understand what's happening. Once it works, refactor to use macros. This helps you understand the underlying mechanics.
+</Aside>
+
+## Next Steps
+
+Now that you can create components to store data, it's time to learn about systems - where you'll write the logic that operates on your components.

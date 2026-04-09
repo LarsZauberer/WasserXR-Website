@@ -1,0 +1,184 @@
+---
+title: Entity
+description: Creating and managing entities in WasserXR
+sidebar:
+  order: 3
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+Entities are the simplest concept in ECS - they're just unique identifiers. Think of them as empty containers waiting to be filled with components. An entity by itself does nothing; it only becomes meaningful when you attach components to it.
+
+## What is an Entity?
+
+In WasserXR, an entity is just a number (specifically, a `size_t`). This number uniquely identifies an object in your scene. Whether you're creating a player, an enemy, a light source, or a UI element, they all start as entities.
+
+```c
+typedef size_t TS_Entity;
+```
+
+The beauty of this simplicity is that entities are incredibly lightweight. Creating thousands of entities has minimal overhead because you're just generating IDs.
+
+## Lifecycle of an Entity
+
+### Creating Entities
+
+To create a new entity, use `ts_add_entity()`:
+
+```c
+TS_Scene *scene = ts_create_scene();
+
+// Create some entities
+TS_Entity player = ts_add_entity(scene);
+TS_Entity enemy = ts_add_entity(scene);
+TS_Entity camera = ts_add_entity(scene);
+```
+
+Each call returns a unique entity ID. At this point, these entities are just empty containers - they have no behavior or data until you add components to them.
+
+### Adding Components to Entities
+
+Entities become useful when you attach components:
+
+```c
+// Make the player entity have position and health
+ts_add_component(scene, player, "Transform");
+ts_add_component(scene, player, "Health");
+
+// Make the camera entity have position and camera settings
+ts_add_component(scene, camera, "Transform");
+ts_add_component(scene, camera, "Camera");
+```
+
+The `ts_add_component()` function returns a pointer to the newly created component data, which you can use to initialize values if needed:
+
+```c
+Health *player_health = ts_add_component(scene, player, "Health");
+if (player_health) {
+    // Initialize the health component
+    player_health->current = 100;
+    player_health->maximum = 100;
+}
+```
+
+<Aside type="note" title="Component Ownership" icon="information">
+The component data returned by `ts_add_component()` is owned by the ECS. You can use the pointer immediately after creation, but don't store it long-term - components may be moved in memory when the scene is modified.
+</Aside>
+
+### Getting Components from Entities
+
+To retrieve a component from an entity:
+
+```c
+Health *health = ts_entity_get_component(scene, player, "Health");
+if (health) {
+    printf("Player health: %d/%d\n", health->current, health->maximum);
+}
+```
+
+Always check if the returned pointer is `NULL` - not all entities have all components.
+
+### Removing Components from Entities
+
+You can remove a component from an entity at any time:
+
+```c
+ts_remove_component(scene, player, "Health");
+```
+
+This calls the component's destroyer function and frees its memory. The entity continues to exist with any remaining components.
+
+### Querying Entity Components
+
+If you need to see all components attached to an entity:
+
+```c
+size_t count;
+char **component_names = ts_get_components_of_entity(&count, scene, player);
+
+printf("Entity %zu has %zu components:\n", player, count);
+for (size_t i = 0; i < count; i++) {
+    printf("  - %s\n", component_names[i]);
+    free(component_names[i]);  // Free each string
+}
+free(component_names);  // Free the array
+```
+
+<Aside type="caution" title="Memory Management" icon="warning">
+The array returned by `ts_get_components_of_entity()` is **owned by you**. You must free each string in the array, then free the array itself.
+</Aside>
+
+### Destroying Entities
+
+When you're done with an entity, remove it from the scene:
+
+```c
+int result = ts_remove_entity(scene, player);
+if (result == 0) {
+    printf("Entity removed successfully\n");
+}
+```
+
+This removes the entity and **automatically destroys all its components**. The entity ID becomes invalid after removal.
+
+<Aside type="tip" title="Cleanup" icon="rocket">
+You don't need to manually remove components before removing an entity - `ts_remove_entity()` handles cleanup for you.
+</Aside>
+
+## Example: Building a Game Object
+
+Here's how you might create a complete game object:
+
+```c
+// Create the entity
+TS_Entity enemy = ts_add_entity(scene);
+
+// Add and initialize components
+Transform *transform = ts_add_component(scene, enemy, "Transform");
+transform->x = 10.0f;
+transform->y = 0.0f;
+transform->z = 5.0f;
+
+Health *health = ts_add_component(scene, enemy, "Health");
+health->current = 50;
+health->maximum = 50;
+
+Renderer *renderer = ts_add_component(scene, enemy, "Renderer");
+renderer->model = "goblin.obj";
+
+// The entity is now a positioned, rendered enemy with health
+```
+
+## Getting All Entities
+
+Sometimes you need to iterate over all entities in a scene:
+
+```c
+size_t count;
+TS_Entity *entities = ts_get_entities(&count, scene);
+
+printf("Scene has %zu entities\n", count);
+for (size_t i = 0; i < count; i++) {
+    printf("Entity: %zu\n", entities[i]);
+}
+
+free(entities);  // Remember to free!
+```
+
+<Aside type="note" title="Ownership" icon="information">
+Like `ts_get_components_of_entity()`, the array returned by `ts_get_entities()` is owned by you and must be freed.
+</Aside>
+
+## Best Practices
+
+**Keep entities simple.** An entity is just an ID - don't try to make it more complex. All the data and behavior should live in components and systems.
+
+**Organize by components, not by entity type.** Instead of thinking "I need a Player entity class," think "I need an entity with Transform, Health, and PlayerInput components."
+
+**Clean up when done.** Remove entities that are no longer needed to free memory. WasserXR is efficient, but unused entities still consume resources.
+
+**Don't store entity IDs long-term in weird places.** If you need to reference one entity from another, store the ID in a component. For example, a "Target" component might store the entity ID of what an enemy is chasing.
+
+## Next Steps
+
+Now that you understand entities, it's time to learn about components - the data containers that give entities meaning and purpose.

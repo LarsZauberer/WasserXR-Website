@@ -1,0 +1,181 @@
+---
+title: Plugin
+description: Understanding and working with WasserXR plugins
+sidebar:
+  order: 2
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+Plugins are WasserXR's way of packaging components and systems into reusable modules. Unlike standard ECS implementations, WasserXR uses a plugin system to enable one of its most powerful features: hot-reloading.
+
+## What are Plugins?
+
+A plugin is simply a shared library (`.so` file on Linux, `.dll` on Windows) that contains one or more components and systems. When you load a plugin into a scene, WasserXR discovers all the components and systems it provides and makes them available for use.
+
+This modular approach means you can:
+- Organize related components and systems together
+- Reload code changes without restarting your application
+- Share functionality across multiple projects
+- Choose between dynamic and static linking based on your needs
+
+<Aside type="note" title="Why Plugins?" icon="information">
+The plugin system isn't part of standard ECS architecture - it's a WasserXR-specific feature designed to enable hot-reloading and modular development. You can think of plugins as containers that hold your game logic.
+</Aside>
+
+## Creating Your First Plugin
+
+A plugin is just a C library that exports functions following specific naming conventions. WasserXR looks for these functions when loading your plugin.
+
+For example, if you have a component called `Health`, your plugin needs to export:
+- `ts_create_Health()` - Creates a new instance
+- `ts_destroy_Health()` - Destroys an instance
+- `ts_schema_Health()` - Defines the component's fields
+
+Similarly, for a system called `damage_system`, you need:
+- `ts_system_damage_system()` - The main system logic
+- `ts_select_damage_system()` - Selects which entities to process
+
+<Aside type="caution" title="Important: Function Naming" icon="warning">
+The `ts_` prefix is **required** for all component and system functions. WasserXR's plugin system looks for functions with these exact prefixes. Your component can be named anything (like `Health` or `Velocity`), but the functions must be `ts_create_Health()`, `ts_destroy_Health()`, etc.
+</Aside>
+
+## Compiling Plugins
+
+Plugins are compiled as shared libraries. Here are two common approaches:
+
+### Using CMake
+
+```cmake
+# Create a shared library for your plugin
+add_library(my_game_plugin SHARED
+    src/components/Health.c
+    src/systems/DamageSystem.c
+)
+
+# Link against WasserXR's ECS library
+target_link_libraries(my_game_plugin PRIVATE theseed_ecs)
+```
+
+### Using GCC Directly
+
+```bash
+# Compile as a shared library
+gcc -shared -fPIC -o libmygame.so \
+    components/Health.c \
+    systems/DamageSystem.c \
+    -I/path/to/wasserxr/include \
+    -L/path/to/wasserxr/lib -ltheseed_ecs
+```
+
+The `-shared` flag tells GCC to create a shared library, and `-fPIC` generates position-independent code, which is required for shared libraries.
+
+## Loading Plugins
+
+Once you've compiled your plugin, load it into a scene:
+
+```c
+TS_Scene *scene = ts_create_scene();
+
+// Load your plugin
+int result = ts_load_plugin(scene, "libmygame.so");
+if (result != 0) {
+    printf("Failed to load plugin!\n");
+}
+```
+
+When a plugin loads successfully, all its components and systems become available. You can immediately start using them to create components and add systems.
+
+<Aside type="note" title="Ownership" icon="information">
+The scene owns the loaded plugin. You don't need to manually manage the plugin's memory - it will be cleaned up when you destroy the scene.
+</Aside>
+
+## Unloading Plugins
+
+You can unload a plugin when you no longer need it:
+
+```c
+ts_unload_plugin(scene, "libmygame.so");
+```
+
+<Aside type="caution" title="Important" icon="warning">
+Unloading a plugin **destroys all components and systems** associated with it. Any entities using those components will have them removed. If you just want to reload updated code, use reloading instead.
+</Aside>
+
+## Reloading Plugins
+
+This is where the magic happens. When you change your code, you can recompile your plugin and reload it without restarting your application:
+
+```c
+// From outside a system (e.g., in your main loop)
+ts_reload(scene);
+```
+
+If you need to trigger a reload from within a system, use this instead:
+
+```c
+// From inside a system
+ts_set_scene_reload(scene);
+```
+
+The difference is important: `ts_reload()` immediately replaces all system functions, which would invalidate the return address of any currently running system. Using `ts_set_scene_reload()` schedules the reload to happen at the end of the current tick, after all systems have finished running.
+
+<Aside type="tip" title="Hot-Reloading Workflow" icon="rocket">
+A typical workflow looks like this:
+1. Edit your component or system code
+2. Recompile your plugin (keep the app running!)
+3. Press a hotkey that calls `ts_set_scene_reload()`
+4. See your changes instantly
+
+This keeps you in the flow of development without constant restarts.
+</Aside>
+
+## Notes About Lifetime
+
+Understanding plugin lifetime is important for proper resource management:
+
+**Plugins persist through scene resets.** When you call `ts_reset_scene()`, it removes all entities, components, and systems, but **keeps all loaded plugins**. This means:
+
+- You don't need to reload plugins after resetting a scene
+- Any initialization code in your systems will run again when you re-add them
+- Plugin-level resources (if any) remain available
+
+If you want to truly start fresh, you need to manually unload plugins before resetting the scene.
+
+## Dynamic and Static Linking
+
+WasserXR supports both dynamic and static linking for your plugins:
+
+### Dynamic Linking (Recommended for Development)
+
+This is the default approach we've been discussing:
+- Plugins are separate `.so` files
+- Loaded at runtime with `ts_load_plugin()`
+- **Can be hot-reloaded**
+- Slightly slower startup time
+
+Use this during development to take advantage of hot-reloading.
+
+### Static Linking (Recommended for Production)
+
+You can also compile plugins directly into your executable:
+- Components and systems are linked at compile time
+- No need to call `ts_load_plugin()`
+- **Cannot be hot-reloaded**
+- Faster startup, simpler distribution
+
+To enable static linking, define `TS_STATIC` when compiling:
+
+```bash
+gcc -DTS_STATIC -o mygame main.c libmygame.a -ltheseed_ecs
+```
+
+With static linking, your components and systems are automatically available without loading any plugins.
+
+<Aside type="note" title="Hybrid Approach" icon="information">
+You can mix both approaches: statically link core functionality and dynamically load optional features or mod support. The engine treats them the same way once loaded.
+</Aside>
+
+## Next Steps
+
+Now that you understand plugins, you're ready to learn about the building blocks they contain: entities, components, and systems. Start with entities to understand how to create objects in your world.
