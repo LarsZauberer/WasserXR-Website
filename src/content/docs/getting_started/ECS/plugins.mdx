@@ -1,5 +1,5 @@
 ---
-title: Plugin
+title: Plugins
 description: Understanding and working with WasserXR plugins
 sidebar:
   order: 2
@@ -7,40 +7,28 @@ sidebar:
 
 import { Aside } from '@astrojs/starlight/components';
 
-Plugins are WasserXR's way of packaging components and systems into reusable modules. Unlike standard ECS implementations, WasserXR uses a plugin system to enable one of its most powerful features: hot-reloading.
+Plugins are not part of a standard ECS architecture. In WasserXR, plugins are a way of bundling components and systems into **reusable modules**. These modules can then be seperately compiled from other parts of your project. Unlike standard ECS implementations, WasserXR uses a plugin system to enable one of its most powerful features: **hot-reloading**.
 
 ## What are Plugins?
 
-A plugin is simply a shared library (`.so` file on Linux, `.dll` on Windows) that contains one or more components and systems. When you load a plugin into a scene, WasserXR discovers all the components and systems it provides and makes them available for use.
+A plugin is simply a shared library (`.so` file on Linux, `.dll` on Windows) that contains one or more components and systems.
 
 This modular approach means you can:
 - Organize related components and systems together
 - Reload code changes without restarting your application
 - Share functionality across multiple projects
-- Choose between dynamic and static linking based on your needs
-
-<Aside type="note" title="Why Plugins?" icon="information">
-The plugin system isn't part of standard ECS architecture - it's a WasserXR-specific feature designed to enable hot-reloading and modular development. You can think of plugins as containers that hold your game logic.
-</Aside>
 
 ## Creating Your First Plugin
 
-A plugin is just a C library that exports functions following specific naming conventions. WasserXR looks for these functions when loading your plugin.
+A plugin is just a compiled library that exports functions to the **[C ABI](https://en.wikipedia.org/wiki/Application_binary_interface)** following specific naming conventions. This means that you can use **any** language that supports the C ABI like C, C++, Rust, Go, ... .
 
-For example, if you have a component called `Health`, your plugin needs to export:
-- `ts_create_Health()` - Creates a new instance
-- `ts_destroy_Health()` - Destroys an instance
-- `ts_schema_Health()` - Defines the component's fields
-
-Similarly, for a system called `damage_system`, you need:
-- `ts_system_damage_system()` - The main system logic
-- `ts_select_damage_system()` - Selects which entities to process
-
-<Aside type="caution" title="Important: Function Naming" icon="warning">
-The `ts_` prefix is **required** for all component and system functions. WasserXR's plugin system looks for functions with these exact prefixes. Your component can be named anything (like `Health` or `Velocity`), but the functions must be `ts_create_Health()`, `ts_destroy_Health()`, etc.
+<Aside type="caution" title="Name Mangling" icon="warning">
+A lot of languages are using something called [name mangling](https://en.wikipedia.org/wiki/Name_mangling). While this can be often disabled, you should not forget to do so. Otherwise, WasserXR will not be able to find your functions.
 </Aside>
 
-## Compiling Plugins
+To create a library you just start building [Components](../components) or [Systems](../systems) and compile them.
+
+## Compiling Plugins in C
 
 Plugins are compiled as shared libraries. Here are two common approaches:
 
@@ -54,7 +42,7 @@ add_library(my_game_plugin SHARED
 )
 
 # Link against WasserXR's ECS library
-target_link_libraries(my_game_plugin PRIVATE theseed_ecs)
+target_link_libraries(my_game_plugin PRIVATE wasserxr_ecs)
 ```
 
 ### Using GCC Directly
@@ -65,7 +53,7 @@ gcc -shared -fPIC -o libmygame.so \
     components/Health.c \
     systems/DamageSystem.c \
     -I/path/to/wasserxr/include \
-    -L/path/to/wasserxr/lib -ltheseed_ecs
+    -L/path/to/wasserxr/lib -lwasserxr_ecs
 ```
 
 The `-shared` flag tells GCC to create a shared library, and `-fPIC` generates position-independent code, which is required for shared libraries.

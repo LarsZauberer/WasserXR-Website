@@ -7,7 +7,7 @@ export default defineConfig({
 	integrations: [
 		starlight({
 			title: 'WasserXR',
-			social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/LarsZauberer/TheSeed' }],
+			social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/LarsZauberer/TheSeed' }, {icon: "discord", label: "Discord", href: "https://discord.gg/XcjBZn5pHy"}],
 			sidebar: [
 				{
 					label: 'Getting Started',
