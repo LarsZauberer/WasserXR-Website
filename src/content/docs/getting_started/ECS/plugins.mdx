@@ -5,28 +5,41 @@ sidebar:
   order: 2
 ---
 
-import { Aside } from '@astrojs/starlight/components';
+import { Aside } from "@astrojs/starlight/components";
 
-Plugins are not part of a standard ECS architecture. In WasserXR, plugins are a way of bundling components and systems into **reusable modules**. These modules can then be seperately compiled from other parts of your project. Unlike standard ECS implementations, WasserXR uses a plugin system to enable one of its most powerful features: **hot-reloading**.
+Plugins are not part of a standard ECS architecture. In WasserXR, plugins are a
+way of bundling components and systems into **reusable modules**. These modules
+can then be seperately compiled from other parts of your project. Unlike
+standard ECS implementations, WasserXR uses a plugin system to enable one of its
+most powerful features: **hot-reloading**.
 
 ## What are Plugins?
 
-A plugin is simply a shared library (`.so` file on Linux, `.dll` on Windows) that contains one or more components and systems.
+A plugin is simply a shared library (`.so` file on Linux, `.dll` on Windows)
+that contains one or more components and systems.
 
 This modular approach means you can:
+
 - Organize related components and systems together
 - Reload code changes without restarting your application
 - Share functionality across multiple projects
 
 ## Creating Your First Plugin
 
-A plugin is just a compiled library that exports functions to the **[C ABI](https://en.wikipedia.org/wiki/Application_binary_interface)** following specific naming conventions. This means that you can use **any** language that supports the C ABI like C, C++, Rust, Go, ... .
+A plugin is just a compiled library that exports functions to the
+**[C ABI](https://en.wikipedia.org/wiki/Application_binary_interface)**
+following specific naming conventions. This means that you can use **any**
+language that supports the C ABI like C, C++, Rust, Go, ... .
 
 <Aside type="caution" title="Name Mangling" icon="warning">
-A lot of languages are using something called [name mangling](https://en.wikipedia.org/wiki/Name_mangling). While this can be often disabled, you should not forget to do so. Otherwise, WasserXR will not be able to find your functions.
+  A lot of languages are using something called [name
+  mangling](https://en.wikipedia.org/wiki/Name_mangling). While this can be
+  often disabled, you should not forget to do so. Otherwise, WasserXR will not
+  be able to find your functions.
 </Aside>
 
-To create a library you just start building [Components](../components) or [Systems](../systems) and compile them.
+To create a library you just start building [Components](../components) or
+[Systems](../systems) and compile them.
 
 ## Compiling Plugins in C
 
@@ -56,34 +69,25 @@ gcc -shared -fPIC -o libmygame.so \
     -L/path/to/wasserxr/lib -lwasserxr_ecs
 ```
 
-The `-shared` flag tells GCC to create a shared library, and `-fPIC` generates position-independent code, which is required for shared libraries.
+The `-shared` flag tells GCC to create a shared library, and `-fPIC` generates
+position-independent code, which is required for shared libraries.
 
 ## Dynamic and Static Linking
 
 WasserXR supports both dynamic and static linking for your plugins:
 
-### Dynamic Linking (Recommended for Development)
-
-This is the default approach we've been discussing:
-- Plugins are separate `.so` files
-- Loaded at runtime with `ts_load_plugin()`
-- **Can be hot-reloaded**
-- Slightly slower startup time
-
-Use this during development to take advantage of hot-reloading.
-
-### Static Linking (Recommended for Release)
-
-You can also compile plugins directly into your executable:
-- Components and systems are linked at compile time
-- No need to call `ts_load_plugin()`
-- **Cannot be hot-reloaded**
-- Simpler distribution
-
-With static linking, your components and systems are automatically available without loading any plugins.
+|                                           | Dynamic Linking | Static Linking |     |     |
+| ----------------------------------------- | --------------- | -------------- | --- | --- |
+| Purpose                                   | Development     | Release        |     |     |
+| Filetype                                  | `.so`           | `.o` or `.a`   |     |     |
+| Needs Plugin Loading                      | ✅️             | ❌️            |     |     |
+| Allows Hotreloading                       | ✅️             | ❌️            |     |     |
+| Needs the Plugins on end system installed | ✅️             | ❌️            |     |     |
 
 <Aside type="note" title="Hybrid Approach" icon="information">
-You can mix both approaches: statically link core functionality and dynamically load optional features. This allows also for direct **modding support**. The engine treats them the same way once loaded.
+  You can mix both approaches: statically link core functionality and
+  dynamically load optional features. This allows also for direct **modding
+  support**. The engine treats them the same way once loaded.
 </Aside>
 
 ## Using Plugins
@@ -102,7 +106,9 @@ if (result != 0) {
 }
 ```
 
-When a plugin loads successfully, all its components and systems become available. You can immediately start using them to create components and add systems.
+When a plugin loads successfully, all its components and systems become
+available. You can immediately start using them to create components and add
+systems.
 
 ### Unloading Plugins
 
@@ -113,16 +119,21 @@ ts_unload_plugin(scene, "libmygame.so");
 ```
 
 <Aside type="caution" title="Unloading vs. Reloading" icon="warning">
-Unloading a plugin **destroys all components and systems** associated with it. Any entities using those components will have them removed. If you just want to reload the plugin, use reloading instead.
+  Unloading a plugin **destroys all components and systems** associated with it.
+  Any entities using those components will have them removed. If you just want
+  to reload the plugin, use reloading instead.
 </Aside>
 
 <Aside type="note" title="Resetting the Scene" icon="information">
-When **resetting** the scene with `ts_reset_scene(scene)`, all plugins will stay loaded. Only [entities](../entities), [components](../components), [systems](../systems) will be destroyed.
+  When **resetting** the scene with `ts_reset_scene(scene)`, all plugins will
+  stay loaded. Only [entities](../entities), [components](../components),
+  [systems](../systems) will be destroyed.
 </Aside>
 
 ### Reloading Plugins
 
-This is the most special feature of WasserXR. When you change your code, you can **recompile your plugin** and reload it **without restarting your application**:
+This is the most special feature of WasserXR. When you change your code, you can
+**recompile your plugin** and reload it **without restarting your application**:
 
 ```c
 // From inside a system
@@ -130,11 +141,17 @@ ts_set_scene_reload(scene);
 ```
 
 <Aside type="note" title="When is the reload happening" icon="information">
-The current tick is still finished. All systems will once run through and at the end of the tick the reload will be executed. This makes sure that the current system properly terminates and the code where it is executed is invalidated.
+  The current tick is still finished. All systems will once run through and at
+  the end of the tick the reload will be executed. This makes sure that the
+  current system properly terminates and the code where it is executed is
+  invalidated.
 </Aside>
 
 <Aside type="caution" title="Immediate Reloading" icon="warning">
-If you need to trigger an immediate reload, you can use `ts_reload(scene)`. Be careful: If this is triggered within a system, this will invalidate the code memory the system lives in, which will result in undefined behaviour or segmentation faults.
+  If you need to trigger an immediate reload, you can use `ts_reload(scene)`. Be
+  careful: If this is triggered within a system, this will invalidate the code
+  memory the system lives in, which will result in undefined behaviour or
+  segmentation faults.
 </Aside>
 
 <Aside type="tip" title="Hot-Reloading Workflow" icon="rocket">
@@ -145,5 +162,5 @@ A typical workflow looks like this:
 4. See your changes instantly
 
 This keeps you in the flow of development without constant restarts.
-</Aside>
 
+</Aside>
