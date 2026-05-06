@@ -58,7 +58,37 @@ gcc -shared -fPIC -o libmygame.so \
 
 The `-shared` flag tells GCC to create a shared library, and `-fPIC` generates position-independent code, which is required for shared libraries.
 
-## Loading Plugins
+## Dynamic and Static Linking
+
+WasserXR supports both dynamic and static linking for your plugins:
+
+### Dynamic Linking (Recommended for Development)
+
+This is the default approach we've been discussing:
+- Plugins are separate `.so` files
+- Loaded at runtime with `ts_load_plugin()`
+- **Can be hot-reloaded**
+- Slightly slower startup time
+
+Use this during development to take advantage of hot-reloading.
+
+### Static Linking (Recommended for Release)
+
+You can also compile plugins directly into your executable:
+- Components and systems are linked at compile time
+- No need to call `ts_load_plugin()`
+- **Cannot be hot-reloaded**
+- Simpler distribution
+
+With static linking, your components and systems are automatically available without loading any plugins.
+
+<Aside type="note" title="Hybrid Approach" icon="information">
+You can mix both approaches: statically link core functionality and dynamically load optional features. This allows also for direct **modding support**. The engine treats them the same way once loaded.
+</Aside>
+
+## Using Plugins
+
+### Loading Plugins
 
 Once you've compiled your plugin, load it into a scene:
 
@@ -74,11 +104,7 @@ if (result != 0) {
 
 When a plugin loads successfully, all its components and systems become available. You can immediately start using them to create components and add systems.
 
-<Aside type="note" title="Ownership" icon="information">
-The scene owns the loaded plugin. You don't need to manually manage the plugin's memory - it will be cleaned up when you destroy the scene.
-</Aside>
-
-## Unloading Plugins
+### Unloading Plugins
 
 You can unload a plugin when you no longer need it:
 
@@ -86,27 +112,30 @@ You can unload a plugin when you no longer need it:
 ts_unload_plugin(scene, "libmygame.so");
 ```
 
-<Aside type="caution" title="Important" icon="warning">
-Unloading a plugin **destroys all components and systems** associated with it. Any entities using those components will have them removed. If you just want to reload updated code, use reloading instead.
+<Aside type="caution" title="Unloading vs. Reloading" icon="warning">
+Unloading a plugin **destroys all components and systems** associated with it. Any entities using those components will have them removed. If you just want to reload the plugin, use reloading instead.
 </Aside>
 
-## Reloading Plugins
+<Aside type="note" title="Resetting the Scene" icon="information">
+When **resetting** the scene with `ts_reset_scene(scene)`, all plugins will stay loaded. Only [entities](../entities), [components](../components), [systems](../systems) will be destroyed.
+</Aside>
 
-This is where the magic happens. When you change your code, you can recompile your plugin and reload it without restarting your application:
+### Reloading Plugins
 
-```c
-// From outside a system (e.g., in your main loop)
-ts_reload(scene);
-```
-
-If you need to trigger a reload from within a system, use this instead:
+This is the most special feature of WasserXR. When you change your code, you can **recompile your plugin** and reload it **without restarting your application**:
 
 ```c
 // From inside a system
 ts_set_scene_reload(scene);
 ```
 
-The difference is important: `ts_reload()` immediately replaces all system functions, which would invalidate the return address of any currently running system. Using `ts_set_scene_reload()` schedules the reload to happen at the end of the current tick, after all systems have finished running.
+<Aside type="note" title="When is the reload happening" icon="information">
+The current tick is still finished. All systems will once run through and at the end of the tick the reload will be executed. This makes sure that the current system properly terminates and the code where it is executed is invalidated.
+</Aside>
+
+<Aside type="caution" title="Immediate Reloading" icon="warning">
+If you need to trigger an immediate reload, you can use `ts_reload(scene)`. Be careful: If this is triggered within a system, this will invalidate the code memory the system lives in, which will result in undefined behaviour or segmentation faults.
+</Aside>
 
 <Aside type="tip" title="Hot-Reloading Workflow" icon="rocket">
 A typical workflow looks like this:
@@ -118,52 +147,3 @@ A typical workflow looks like this:
 This keeps you in the flow of development without constant restarts.
 </Aside>
 
-## Notes About Lifetime
-
-Understanding plugin lifetime is important for proper resource management:
-
-**Plugins persist through scene resets.** When you call `ts_reset_scene()`, it removes all entities, components, and systems, but **keeps all loaded plugins**. This means:
-
-- You don't need to reload plugins after resetting a scene
-- Any initialization code in your systems will run again when you re-add them
-- Plugin-level resources (if any) remain available
-
-If you want to truly start fresh, you need to manually unload plugins before resetting the scene.
-
-## Dynamic and Static Linking
-
-WasserXR supports both dynamic and static linking for your plugins:
-
-### Dynamic Linking (Recommended for Development)
-
-This is the default approach we've been discussing:
-- Plugins are separate `.so` files
-- Loaded at runtime with `ts_load_plugin()`
-- **Can be hot-reloaded**
-- Slightly slower startup time
-
-Use this during development to take advantage of hot-reloading.
-
-### Static Linking (Recommended for Production)
-
-You can also compile plugins directly into your executable:
-- Components and systems are linked at compile time
-- No need to call `ts_load_plugin()`
-- **Cannot be hot-reloaded**
-- Faster startup, simpler distribution
-
-To enable static linking, define `TS_STATIC` when compiling:
-
-```bash
-gcc -DTS_STATIC -o mygame main.c libmygame.a -ltheseed_ecs
-```
-
-With static linking, your components and systems are automatically available without loading any plugins.
-
-<Aside type="note" title="Hybrid Approach" icon="information">
-You can mix both approaches: statically link core functionality and dynamically load optional features or mod support. The engine treats them the same way once loaded.
-</Aside>
-
-## Next Steps
-
-Now that you understand plugins, you're ready to learn about the building blocks they contain: entities, components, and systems. Start with entities to understand how to create objects in your world.
