@@ -5,7 +5,7 @@ sidebar:
   order: 2
 ---
 
-import { Aside } from "@astrojs/starlight/components";
+import { Aside, Tabs, TabItem } from "@astrojs/starlight/components";
 
 Plugins are not part of a standard ECS architecture. In WasserXR, plugins are a
 way of bundling components and systems into **reusable modules**. These modules
@@ -41,11 +41,26 @@ language that supports the C ABI like C, C++, Rust, Go, ... .
 To create a library you just start building [Components](../components) or
 [Systems](../systems) and compile them.
 
-## Compiling Plugins in C
+<Tabs syncKey="lang">
+<TabItem label="C">
 
-Plugins are compiled as shared libraries. Here are two common approaches:
+<Tabs syncKey="build-c">
+<TabItem label="GCC">
 
-### Using CMake
+```bash
+gcc -shared -fPIC -o libmygame.so \
+    components/Health.c \
+    systems/DamageSystem.c \
+    -I/path/to/wasserxr/include \
+    -L/path/to/wasserxr/lib -lwasserxr_ecs
+```
+
+The `-shared` flag tells GCC to create a shared library, and `-fPIC` generates
+position-independent code, which is required for shared libraries.
+
+</TabItem>
+
+<TabItem label="CMake">
 
 ```cmake
 # Create a shared library for your plugin
@@ -58,19 +73,11 @@ add_library(my_game_plugin SHARED
 target_link_libraries(my_game_plugin PRIVATE wasserxr_ecs)
 ```
 
-### Using GCC Directly
+</TabItem>
+</Tabs>
 
-```bash
-# Compile as a shared library
-gcc -shared -fPIC -o libmygame.so \
-    components/Health.c \
-    systems/DamageSystem.c \
-    -I/path/to/wasserxr/include \
-    -L/path/to/wasserxr/lib -lwasserxr_ecs
-```
-
-The `-shared` flag tells GCC to create a shared library, and `-fPIC` generates
-position-independent code, which is required for shared libraries.
+</TabItem>
+</Tabs>
 
 ## Dynamic and Static Linking
 
