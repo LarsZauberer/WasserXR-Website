@@ -100,10 +100,10 @@ WasserXR supports both dynamic and static linking for your plugins:
 Once you've compiled your plugin, load it into a scene:
 
 ```c
-TS_Scene *scene = ts_create_scene();
+WXR_Scene *scene = wxr_create_scene();
 
 // Load your plugin
-int result = ts_load_plugin(scene, "libmygame.so");
+int result = wxr_load_plugin(scene, "libmygame.so");
 if (result != 0) {
     printf("Failed to load plugin!\n");
 }
@@ -118,7 +118,7 @@ systems.
 You can unload a plugin when you no longer need it:
 
 ```c
-ts_unload_plugin(scene, "libmygame.so");
+wxr_unload_plugin(scene, "libmygame.so");
 ```
 
 <Aside type="caution" title="Unloading vs. Reloading" icon="warning">
@@ -128,7 +128,7 @@ ts_unload_plugin(scene, "libmygame.so");
 </Aside>
 
 <Aside type="note" title="Resetting the Scene" icon="information">
-  When **resetting** the scene with `ts_reset_scene(scene)`, all plugins will
+  When **resetting** the scene with `wxr_reset_scene(scene)`, all plugins will
   stay loaded. Only [entities](../entities), [components](../components),
   [systems](../systems) will be destroyed.
 </Aside>
@@ -140,7 +140,7 @@ This is the most special feature of WasserXR. When you change your code, you can
 
 ```c
 // From inside a system
-ts_set_scene_reload(scene);
+wxr_set_scene_reload(scene);
 ```
 
 <Aside type="note" title="When is the reload happening" icon="information">
@@ -151,9 +151,9 @@ ts_set_scene_reload(scene);
 </Aside>
 
 <Aside type="caution" title="Immediate Reloading" icon="warning">
-  If you need to trigger an immediate reload, you can use `ts_reload(scene)`. Be
-  careful: If this is triggered within a system, this will invalidate the code
-  memory the system lives in, which will result in undefined behaviour or
+  If you need to trigger an immediate reload, you can use `wxr_reload(scene)`.
+  Be careful: If this is triggered within a system, this will invalidate the
+  code memory the system lives in, which will result in undefined behaviour or
   segmentation faults.
 </Aside>
 
@@ -161,7 +161,7 @@ ts_set_scene_reload(scene);
 A typical workflow looks like this:
 1. Edit your component or system code
 2. Recompile your plugin (keep the app running!)
-3. Press a hotkey that calls `ts_set_scene_reload()`
+3. Press a hotkey that calls `wxr_set_scene_reload()`
 4. See your changes instantly
 
 This keeps you in the flow of development without constant restarts.

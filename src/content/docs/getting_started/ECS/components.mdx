@@ -125,7 +125,7 @@ with a manual approach:
 <TabItem label="C">
 
 ```c
-void wxr_schema_Health(TS_Component_Schema *schema) {
+void wxr_schema_Health(WXR_Component_Schema *schema) {
   WXR_SCHEMA_FIELD *current_field = wxr_create_component_field("current", WXR_L, null, null, null, null);
   wxr_add_field_to_component_schema(schema, current_field);
 
@@ -434,7 +434,7 @@ The path to the field value always has to start with the `component` identifier.
 
 <Aside type="note" title="Read-Only Field" icon="information">
 
-If you only need a getter (read-only field), use `TS_BASIC_GETTER` instead.
+If you only need a getter (read-only field), use `WXR_BASIC_GETTER` instead.
 
 </Aside>
 
@@ -453,10 +453,10 @@ typedef struct Item {
 } Item;
 
 // String field with automatic memory management
-TS_STRING_ACCESS(Item, name, component->name);
+WXR_STRING_ACCESS(Item, name, component->name);
 
 // Regular integer field
-TS_BASIC_ACCESS(Item, value, &component->value, sizeof(int));
+WXR_BASIC_ACCESS(Item, value, &component->value, sizeof(int));
 ```
 
 </TabItem>
@@ -473,8 +473,8 @@ For the serialization and deserialization there also exists some macros
 <TabItem label="C">
 
 ```c
-TS_BASIC_SERIALIZERS(Health, current, &component->current, sizeof(int));
-TS_BASIC_SERIALIZERS(Health, maximum, &component->maximum, sizeof(int));
+WXR_BASIC_SERIALIZERS(Health, current, &component->current, sizeof(int));
+WXR_BASIC_SERIALIZERS(Health, maximum, &component->maximum, sizeof(int));
 ```
 
 </TabItem>
@@ -513,7 +513,7 @@ To make registering your fields easier, you can use the following macros
 <TabItem label="C">
 
 ```c
-void wxr_schema_Health(TS_Component_Schema *schema) {
+void wxr_schema_Health(WXR_Component_Schema *schema) {
   // Explicit so you could also say that some operations are `null`
   WXR_SCHEMA_FIELD(WXR_L, current, wxr_get_Health_current, wxr_set_Health_current, wxr_serialize_Health_current, wxr_deserialize_Health_current);
   // or if all the functions are defined and are called in that style
