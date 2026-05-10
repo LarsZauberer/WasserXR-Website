@@ -5,437 +5,318 @@ sidebar:
   order: 4
 ---
 
-import { Aside } from '@astrojs/starlight/components';
+import { Aside, Tabs, TabItem } from "@astrojs/starlight/components";
 
-Systems are where the logic lives in ECS. While components hold data, systems process that data and make things happen. A system runs every frame, finds entities with specific components, and performs operations on them.
-
-## What is a System?
-
-A system is a function that processes entities. For example:
-- A **Physics** system finds entities with `Position` and `Velocity` components and updates positions
-- A **Render** system finds entities with `Transform` and `Mesh` components and draws them
-- A **Damage** system finds entities with `Health` components and applies damage
-
-Each system focuses on one task and runs once per frame.
+Systems are where the logic lives in ECS. While
+[components](/getting_started/ecs/components) hold data, systems process that
+data and make things happen. A system runs every frame, finds
+[entities](/getting_started/ecs/entities) with specific
+[components](/getting_started/ecs/components), and performs operations on them.
 
 ## Creating Your First System
 
-Let's create a simple gravity system that pulls entities downward. We'll start simple and build up complexity.
+Let's create a simple gravity system that pulls entities downward. We'll start
+simple and build up complexity.
 
 <Aside type="caution" title="Function Naming Requirement" icon="warning">
-System functions **must** use the `ts_` prefix. WasserXR's plugin loader searches for functions named `ts_system_<name>`, `ts_select_<name>`, `ts_groups_<name>`, etc. Your system name (like `gravity_system`) can be anything, but the function names must follow this pattern.
+
+As for the [components](/getting_started/ecs/components) system functions
+**must** use the correct name prefix for the ECS system to recognize it as a
+correct system: `wxr_system_<name>`, `wxr_select_<name>`, `wxr_groups_<name>`,
+etc.
+
+When using other languages like C++, Rust, ... you might need to disable
+[name mangling](https://en.wikipedia.org/wiki/Name_mangling) so that the
+compiler doesn't rename the functions in the
+
 </Aside>
 
-### Step 1: Define the Selector Function
+### Step 1: Set the groups for the system
 
-The selector determines which entities the system cares about. It runs once per entity and returns a group number:
+This is a bit special. You need to provide the system with some information
+about how many different types of [entities](/getting_started/ecs/entities) it
+cares about.
+
+<Aside type="note" title="Example" icon="list-format">
+
+Let's consider the `wxr_mesh_renderer` system that should render all the 3D
+Models. It cares about all the [entities](/getting_started/ecs/entities) that
+need to be rendered. It also cares about the camera
+[entity](/getting_started/ecs/entities) and the window
+[entity](/getting_started/ecs/entities). These are 3 categories of different
+[entities](/getting_started/ecs/entities). Hence you would say you have `3`
+groups.
+
+</Aside>
+
+In most simple cases you will probably have only one group.
+
+<Tabs syncKey="lang">
+<TabItem label="C">
+
+To set the group variable for the system you define the **global variable** like
+this
 
 ```c
-int ts_select_gravity_system(const TS_Scene *scene, const TS_Entity entity) {
+WXR_System_Groups wxr_groups_gravity = 1;
+```
+
+</TabItem>
+</Tabs>
+
+<Aside type="note" title="Groups are optional" icon="information">
+
+If your system doesn't care about any [entities](/getting_started/ecs/entities)
+you also don't need to define the groups. The groups will then default to `0`.
+So you are not able to query any [entities](/getting_started/ecs/entities).
+
+</Aside>
+
+### Step 2: Define the Selector Function
+
+The selector determines which [entities](/getting_started/ecs/entities) the
+system cares about. It returns a group number to which the
+[entity](/getting_started/ecs/entities) should belong. It can look something
+like this
+
+<Tabs syncKey="lang">
+<TabItem label="C">
+
+```c
+int wxr_select_gravity(const WXR_Scene *scene, const WXR_Entity entity) {
     // Check if entity has the component we need
-    if (ts_entity_get_component(scene, entity, "Transform")) {
-        return 1;  // Include this entity in group 1
+    if (wxr_entity_get_component(scene, entity, "Transform")) {
+        return 0;  // Include this entity in group with index 0
     }
-    return 0;  // Skip this entity
+    return -1;  // Skip this entity
 }
 ```
 
-Returning `0` means "skip this entity." Any other number includes the entity in that group. For now, we're using just one group.
+Returning `-1` means "skip this entity." Any other number includes the
+[entity](/getting_started/ecs/entities) in that group. Groups are index by `0`.
+
+<Aside type="note" title="Multiple queries" icon="information">
+
+It is also easily possible to query for multiple components like this
+
+```c
+size_t query = wxr_entity_get_component(scene, entity, "WXR_Transform") && wxr_entity_get_component(scene, entity, "WXR_Model");
+
+if (query) {
+  return 0;
+}
+return -1;
+```
+
+</Aside>
+
+</TabItem>
+</Tabs>
+
+<Aside type="note" title="Optional Selector" icon="information">
+
+Defining a selector is **optional** but if you don't have any, also no
+[entities](/getting_started/ecs/entities) will be selected.
+
+</Aside>
 
 ### Step 2: Define the System Function
 
-The system function processes all the entities selected by the selector:
+The system function is the main function of the system and is what is run on
+every frame.
+
+<Tabs syncKey="lang">
+<TabItem label="C">
 
 ```c
-void ts_system_gravity_system(TS_Scene *scene, TS_Entity **entities, const size_t *groups) {
-    // groups[0] contains the count of entities in group 1
+void wxr_system_gravity(WXR_Scene *scene, WXR_Entity **entities, const size_t *groups) {
+    // groups[0] contains the count of entities in group 0
     for (size_t i = 0; i < groups[0]; i++) {
         // Get this entity's ID
-        TS_Entity entity = entities[0][i];
-        
+        WXR_Entity entity = entities[0][i];
+
         // Get the Transform component
-        Transform *transform = ts_entity_get_component(scene, entity, "Transform");
-        if (!transform) continue;
-        
+        void *transform = wxr_entity_get_component(scene, entity, "Transform");
+
         // Apply gravity
-        transform->y -= 9.8f * (1.0f / 60.0f);  // Assuming 60 FPS
+        float y = *(const float*) wxr_get(scene, transform, "y");
+        y -= 1.0F;
+        wxr_set(scene, transform, "y", &y);
     }
 }
 ```
 
 The parameters might look confusing at first:
+
 - `entities` is a 2D array: `entities[group_number][entity_index]`
-- `groups` is an array of sizes: `groups[group_number]` tells you how many entities are in that group
+- `groups` is an array of sizes: `groups[group_number]` tells you how many
+  entities are in that group
 
-Since we're using only one group, we access `entities[0]` and `groups[0]`.
+Since we are using only one group, we access `entities[0]` and `groups[0]`.
 
-### Step 3: Define the Groups Variable
+</TabItem>
+</Tabs>
 
-This tells WasserXR how many groups your system uses:
+## Creating and Destroying Systems
 
-```c
-TS_System_Groups ts_groups_gravity_system = 1;
-```
+You can easily add systems to your scene by using
 
-We're using one group, so we set it to `1`.
-
-### Step 4: Register the System
-
-In your main loop or initialization code, add the system to the scene:
+<Tabs syncKey="lang">
+<TabItem label="C">
 
 ```c
-ts_add_system(scene, "gravity_system", 100);
+int status = wxr_add_system(scene, "gravity", 100);
 ```
 
-The number `100` is the priority - lower numbers run earlier each frame. Now your system will run every tick!
+<Aside type="note" title="System Name" icon="information">
 
-<Aside type="tip" title="Complete System" icon="rocket">
-That's it! These four pieces - selector, system function, groups variable, and registration - are all you need for a working system.
+Like with the [components](/getting_started/ecs/components), the name after the
+function prefix is the identifier of your system and is also used here to find
+your system inside of the [plugin](/getting_started/ecs/systems).
+
 </Aside>
 
-## Querying Entities
+<Aside type="note" title="More than one system" icon="information">
 
-The selector function is powerful because it lets you precisely control which entities your system processes.
+Like with [components](/getting_started/ecs/components), a system can only be
+instantiated once.
 
-### Basic Querying
-
-Check for a single component:
-
-```c
-int ts_select_health_regen_system(const TS_Scene *scene, const TS_Entity entity) {
-    if (ts_entity_get_component(scene, entity, "Health")) {
-        return 1;
-    }
-    return 0;
-}
-```
-
-### Querying Multiple Components
-
-Check for multiple components that must all be present:
-
-```c
-int ts_select_player_controller(const TS_Scene *scene, const TS_Entity entity) {
-    // Entity must have both Transform AND PlayerInput
-    void *transform = ts_entity_get_component(scene, entity, "Transform");
-    void *input = ts_entity_get_component(scene, entity, "PlayerInput");
-    
-    if (transform && input) {
-        return 1;
-    }
-    return 0;
-}
-```
-
-This is the power of ECS - your system automatically finds all entities that match your criteria, no matter how you created them.
-
-## Using Multiple Groups
-
-Now for something more advanced. Sometimes you need to categorize entities into different groups for different processing. This is where group numbers become powerful.
-
-Let's create a rendering system that needs three types of entities:
-
-```c
-TS_System_Groups ts_groups_render_system = 3;
-
-int ts_select_render_system(const TS_Scene *scene, const TS_Entity entity) {
-    void *window = ts_entity_get_component(scene, entity, "Window");
-    void *camera = ts_entity_get_component(scene, entity, "Camera");
-    void *mesh = ts_entity_get_component(scene, entity, "Mesh");
-    
-    // Group 1: Windows
-    if (window) return 1;
-    
-    // Group 2: Cameras
-    if (camera) return 2;
-    
-    // Group 3: Renderable objects
-    if (mesh) return 3;
-    
-    return 0;  // Entity doesn't match any group
-}
-```
-
-Now in the system function, you can process each group separately:
-
-```c
-void ts_system_render_system(TS_Scene *scene, TS_Entity **entities, const size_t *groups) {
-    // Check we have required entities
-    if (groups[0] == 0) {  // No window
-        printf("No window entity!\n");
-        return;
-    }
-    if (groups[1] == 0) {  // No camera
-        printf("No camera entity!\n");
-        return;
-    }
-    
-    // Get the window (we only expect one)
-    TS_Entity window_entity = entities[0][0];
-    Window *window = ts_entity_get_component(scene, window_entity, "Window");
-    
-    // Get the camera (we only expect one)
-    TS_Entity camera_entity = entities[1][0];
-    Camera *camera = ts_entity_get_component(scene, camera_entity, "Camera");
-    
-    // Process all renderable entities
-    for (size_t i = 0; i < groups[2]; i++) {
-        TS_Entity entity = entities[2][i];
-        Mesh *mesh = ts_entity_get_component(scene, entity, "Mesh");
-        Transform *transform = ts_entity_get_component(scene, entity, "Transform");
-        
-        // Render this entity using the camera and window
-        render_mesh(window, camera, mesh, transform);
-    }
-}
-```
-
-<Aside type="note" title="Why Multiple Groups?" icon="information">
-Multiple groups let you efficiently categorize entities in one pass. Instead of running the selector three times (once for windows, once for cameras, once for meshes), you run it once and get all three categories. This is much faster for complex systems.
 </Aside>
 
-## Accessing Component Data
+</TabItem>
+</Tabs>
 
-Once you have an entity, there are two ways to access its component data.
+The number `100` is the priority. Lower numbers run earlier each frame. Now your
+system will run every tick!
 
-### Direct Access
+To remove a system from the scene you can run
 
-Get the component pointer and access fields directly:
-
-```c
-Transform *transform = ts_entity_get_component(scene, entity, "Transform");
-if (transform) {
-    transform->x += 1.0f;
-    transform->y += 2.0f;
-    printf("Position: (%f, %f, %f)\n", transform->x, transform->y, transform->z);
-}
-```
-
-This is fast and convenient when you know the component type.
-
-### Generic Field Access
-
-Use `ts_get()` and `ts_set()` for generic access:
+<Tabs syncKey="lang">
+<TabItem label="C">
 
 ```c
-Transform *transform = ts_entity_get_component(scene, entity, "Transform");
-
-// Get a field value
-const float *x = ts_get(scene, transform, "x");
-printf("X position: %f\n", *x);
-
-// Set a field value
-float new_y = 10.0f;
-ts_set(scene, transform, "y", &new_y);
+int status = wxr_remove_system(scene, "gravity");
 ```
 
-Generic access is useful when:
-- You don't know the component type at compile time
-- You're writing tools or editors
-- You need reflection-like capabilities
-
-<Aside type="caution" title="Ownership" icon="warning">
-The pointer returned by `ts_get()` is **not owned by you**. It's a const pointer to data managed by the ECS. Don't store it long-term and don't modify it directly - use `ts_set()` instead.
-</Aside>
+</TabItem>
+</Tabs>
 
 ## Attacher and Detacher
 
-Sometimes you need initialization or cleanup code that runs once when a system is added or removed. That's what attachers and detachers are for.
+Sometimes you need initialization or cleanup code that runs once when a system
+is added or removed. That's what attachers and detachers are for.
 
 ### Implementing an Attacher
 
-The attacher runs once when you call `ts_add_system()`:
+The attacher runs once when you call `wxr_add_system()`:
+
+<Tabs syncKey="lang">
+<TabItem label="C">
 
 ```c
-void ts_attach_render_system(TS_Scene *scene) {
+void wxr_attach_render_system(WXR_Scene *scene) {
     printf("Render system initializing...\n");
-    
+
     // Load shaders, initialize graphics state, etc.
     load_shaders();
     init_graphics();
-    
+
     printf("Render system ready!\n");
 }
 ```
 
+</TabItem>
+</Tabs>
+
 ### Implementing a Detacher
 
-The detacher runs once when you call `ts_remove_system()`:
+The detacher runs once when you call `wxr_remove_system()`:
+
+<Tabs syncKey="lang">
+<TabItem label="C">
 
 ```c
-void ts_detach_render_system(TS_Scene *scene) {
+void wxr_detach_render_system(WXR_Scene *scene) {
     printf("Render system shutting down...\n");
-    
+
     // Unload resources, clean up state, etc.
     unload_shaders();
     cleanup_graphics();
-    
+
     printf("Render system removed!\n");
 }
 ```
 
-### Naming Convention
-
-For WasserXR to find your attacher and detacher, they must follow the naming convention:
-- Attacher: `ts_attach_<system_name>`
-- Detacher: `ts_detach_<system_name>`
-
-If your system function is called `ts_system_physics`, then name them `ts_attach_physics` and `ts_detach_physics`.
-
-<Aside type="note" title="Optional" icon="information">
-Attachers and detachers are completely optional. Only implement them if you need initialization or cleanup. Most simple systems don't need them.
-</Aside>
-
-## System Priority and Execution Order
-
-When you register a system, you specify a priority:
-
-```c
-ts_add_system(scene, "input_system", 10);      // Runs first
-ts_add_system(scene, "physics_system", 50);    // Runs second
-ts_add_system(scene, "render_system", 100);    // Runs third
-ts_add_system(scene, "cleanup_system", 200);   // Runs last
-```
-
-Lower priority numbers run earlier. Each frame, WasserXR calls `ts_tick_scene()` which runs all systems in priority order.
-
-Choose priorities based on dependencies:
-- Input systems should run early (they gather data)
-- Physics systems run in the middle (they process data)
-- Rendering systems run late (they display results)
-- Cleanup systems run last (they handle any end-of-frame tasks)
-
-## Example: Complete Physics System
-
-Here's a complete example putting everything together:
-
-```c
-// physics_system.h
-int ts_select_physics_system(const TS_Scene *scene, const TS_Entity entity);
-void ts_system_physics_system(TS_Scene *scene, TS_Entity **entities, const size_t *groups);
-extern TS_System_Groups ts_groups_physics_system;
-```
-
-```c
-// physics_system.c
-#include "physics_system.h"
-
-TS_System_Groups ts_groups_physics_system = 1;
-
-int ts_select_physics_system(const TS_Scene *scene, const TS_Entity entity) {
-    // We need both Transform and Velocity components
-    void *transform = ts_entity_get_component(scene, entity, "Transform");
-    void *velocity = ts_entity_get_component(scene, entity, "Velocity");
-    
-    if (transform && velocity) {
-        return 1;
-    }
-    return 0;
-}
-
-void ts_system_physics_system(TS_Scene *scene, TS_Entity **entities, const size_t *groups) {
-    float delta_time = 1.0f / 60.0f;  // Assuming 60 FPS
-    
-    for (size_t i = 0; i < groups[0]; i++) {
-        TS_Entity entity = entities[0][i];
-        
-        Transform *transform = ts_entity_get_component(scene, entity, "Transform");
-        Velocity *velocity = ts_entity_get_component(scene, entity, "Velocity");
-        
-        if (!transform || !velocity) continue;
-        
-        // Update position based on velocity
-        transform->x += velocity->x * delta_time;
-        transform->y += velocity->y * delta_time;
-        transform->z += velocity->z * delta_time;
-        
-        // Apply simple gravity
-        velocity->y -= 9.8f * delta_time;
-    }
-}
-```
-
-Register it in your main code:
-
-```c
-ts_add_system(scene, "physics_system", 50);
-```
-
-Done! Any entity with both `Transform` and `Velocity` will now move and fall.
+</TabItem>
+</Tabs>
 
 ## Special Functions
 
-WasserXR provides special functions you can call from within systems to control the scene.
+WasserXR provides special functions you can call from within systems to control
+the scene.
 
 ### Requesting Scene Reload
 
 To trigger a hot-reload from within a system:
 
+<Tabs syncKey="lang">
+<TabItem label="C">
+
 ```c
-void ts_system_reload_checker(TS_Scene *scene, TS_Entity **entities, const size_t *groups) {
+void wxr_system_reload_checker(WXR_Scene *scene, WXR_Entity **entities, const size_t *groups) {
     // Check if user pressed R key (you'd get this from input system)
     if (reload_key_pressed) {
-        ts_set_scene_reload(scene);
+        wxr_set_scene_reload(scene);
     }
 }
 ```
 
-This schedules a reload at the end of the current frame. All plugins will be reloaded, and you'll see your code changes instantly!
+</TabItem>
+</Tabs>
 
-<Aside type="caution" title="Don't Call ts_reload() Directly" icon="warning">
-Never call `ts_reload()` from within a system. It would invalidate the return address of your system function, causing a crash. Always use `ts_set_scene_reload()` instead, which safely schedules the reload for after all systems finish.
+This schedules a reload at the end of the current frame. All plugins will be
+reloaded, and you'll see your code changes instantly!
+
+<Aside type="caution" title="Don't Call wxr_reload() Directly" icon="warning">
+  Never call `wxr_reload()` from within a system. It would invalidate the return
+  address of your system function, causing a crash. Always use
+  `wxr_set_scene_reload()` instead, which safely schedules the reload for after
+  all systems finish.
 </Aside>
 
 ### Requesting Scene Termination
 
 To signal that the application should quit:
 
+<Tabs syncKey="lang">
+<TabItem label="C">
+
 ```c
-void ts_system_quit_checker(TS_Scene *scene, TS_Entity **entities, const size_t *groups) {
+void wxr_system_quit_checker(WXR_Scene *scene, WXR_Entity **entities, const size_t *groups) {
     // If no windows exist, quit
     if (groups[0] == 0) {
-        ts_set_scene_terminate(scene);
+        wxr_set_scene_terminate(scene);
     }
 }
 ```
 
-Your main loop should check the return value of `ts_tick_scene()`:
+</TabItem>
+</Tabs>
+
+Your main loop should check the return value of `wxr_tick_scene()`:
+
+<Tabs syncKey="lang">
+<TabItem label="C">
 
 ```c
-while (ts_tick_scene(scene)) {
+while (wxr_tick_scene(scene)) {
     // Systems ran normally
 }
 // Scene requested termination, clean up and exit
 ```
 
-`ts_tick_scene()` returns `1` for normal ticks and `0` when termination is requested.
+`wxr_tick_scene()` returns `1` for normal ticks and `0` when termination is
+requested.
 
-## Best Practices
-
-**One system, one responsibility.** Don't create a monolithic `game_logic_system` that does everything. Create focused systems like `movement_system`, `combat_system`, `ai_system`, etc.
-
-**Systems should be stateless.** Don't store data in global variables. If you need to track state between frames, create a component for it. This makes your systems reloadable and testable.
-
-**Order matters.** Think carefully about system priorities. Physics should run before rendering. Input should be processed before gameplay logic.
-
-**Check for null pointers.** Always verify `ts_entity_get_component()` returns a valid pointer. Entities might lose components while your system is running.
-
-**Profile before optimizing.** Don't worry about performance until you measure it. The ECS is already quite efficient. Focus on clear, maintainable code first.
-
-**Use multiple groups wisely.** They're powerful but add complexity. Only use them when you genuinely need to categorize entities differently within the same system.
-
-<Aside type="tip" title="Debugging Systems" icon="pencil">
-Use `printf()` debugging liberally while developing. Print entity counts, component values, and execution flow. WasserXR's hot-reloading makes this workflow very fast - add debug prints, reload, and see results immediately.
-</Aside>
-
-## Next Steps
-
-Congratulations! You now understand all the core concepts of WasserXR's ECS:
-- **Plugins** package your code into reloadable modules
-- **Entities** are unique identifiers for objects
-- **Components** store data about entities
-- **Systems** process entities and make things happen
-
-You're ready to start building! Create some components, write some systems, compile them into a plugin, and start iterating. With hot-reloading, you'll be amazed how fast you can work.
-
-Check out the examples and API documentation for more advanced techniques and patterns. Happy coding!
+</TabItem>
+</Tabs>
