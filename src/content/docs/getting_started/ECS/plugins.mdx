@@ -13,16 +13,8 @@ can then be seperately compiled from other parts of your project. Unlike
 standard ECS implementations, WasserXR uses a plugin system to enable one of its
 most powerful features: **hot-reloading**.
 
-## What are Plugins?
-
 A plugin is simply a shared library (`.so` file on Linux, `.dll` on Windows)
 that contains one or more components and systems.
-
-This modular approach means you can:
-
-- Organize related components and systems together
-- Reload code changes without restarting your application
-- Share functionality across multiple projects
 
 ## Creating Your First Plugin
 
@@ -37,6 +29,10 @@ language that supports the C ABI like C, C++, Rust, Go, ... .
   often disabled, you should not forget to do so. Otherwise, WasserXR will not
   be able to find your functions.
 </Aside>
+
+In other words, if you have correctly written your
+[Component](/getting_started/components) and [System](/getting_started/systems)
+functions you can compile them together into one shared library.
 
 To create a library you just start building [Components](../components) or
 [Systems](../systems) and compile them.
