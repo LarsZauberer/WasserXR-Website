@@ -12,56 +12,58 @@ first part we will discuss how to setup your project to get something running.
 
 <Tabs syncKey="lang">
 <TabItem label="C">
-Create a basic C project like you normally would. You can create a main executable with the following code.
+
+Create a basic C project like you normally would. You can create a main
+executable with the following code.
 
 ```c
-#include "TheSeed/core/logging.h"
-#include "TheSeed/core/utils.h"
-#include "TheSeed/ecs/Scene.h"
+#include "WasserXR/ecs/logging.h"
+#include "WasserXR/ecs/utils.h"
+#include "WasserXR/ecs/Scene.h"
 
 int main() {
   // Create logging
 
-  ts_logging_init(TS_LOG_DEBUG);
-  ts_add_logger(ts_stdout_logger);
+  wxr_logging_init(WXR_LOG_DEBUG);
+  wxr_add_logger(wxr_stdout_logger);
 
-  ts_info("Logging Initialized!");
+  wxr_info("Logging Initialized!");
 
   // Create the ECS
-  TS_Scene *scene = ts_create_scene();
+  WXR_Scene *scene = wxr_create_scene();
 
   // Load standard library
-  ts_load_plugin(scene, "path/to/standard_library.so");
+  wxr_load_plugin(scene, "path/to/standard_library.so");
 
   // Initialize some standard entities and components
-  TS_Entity console = ts_add_entity(scene);
-  ts_add_component(scene, console, "TS_Console");
+  WXR_Entity console = wxr_add_entity(scene);
+  wxr_add_component(scene, console, "WXR_Console");
 
-  TS_Entity window = ts_add_entity(scene);
-  ts_add_component(scene, window, "TS_Window");
+  WXR_Entity window = wxr_add_entity(scene);
+  wxr_add_component(scene, window, "WXR_Window");
 
-  TS_Entity camera = ts_add_entity(scene);
-  ts_add_component(scene, camera, "TS_Camera");
-  ts_add_component(scene, camera, "TS_Transform");
+  WXR_Entity camera = wxr_add_entity(scene);
+  wxr_add_component(scene, camera, "WXR_Camera");
+  wxr_add_component(scene, camera, "WXR_Transform");
 
   // Initialize some standard systems
-  ts_add_system(scene, "ts_console_system", 100);
+  wxr_add_system(scene, "wxr_console_system", 100);
 
-  ts_add_system(scene, "ts_window_pre_renderer", 50);
-  ts_add_system(scene, "ts_window_post_renderer", 150);
+  wxr_add_system(scene, "wxr_window_pre_renderer", 50);
+  wxr_add_system(scene, "wxr_window_post_renderer", 150);
 
-  ts_add_system(scene, "ts_window_quiter", 200);
+  wxr_add_system(scene, "wxr_window_quiter", 200);
 
-  ts_add_system(scene, "ts_window_reloader", 100);
+  wxr_add_system(scene, "wxr_window_reloader", 100);
 
-  ts_add_system(scene, "ts_mesh_renderer", 100);
+  wxr_add_system(scene, "wxr_mesh_renderer", 100);
 
   // Main Game Loop
-  while (ts_tick_scene(scene)) {
+  while (wxr_tick_scene(scene)) {
   }
 
   // Clean Up
-  ts_destroy_scene(scene);
+  wxr_destroy_scene(scene);
 }
 ```
 
@@ -69,7 +71,10 @@ Now, you need to compile the project
 
 <Tabs syncKey="build-c">
 <TabItem label="GCC">
-To compile the project with [GCC](https://en.wikipedia.org/wiki/GNU_Compiler_Collection) you can run the following command
+
+To compile the project with
+[GCC](https://en.wikipedia.org/wiki/GNU_Compiler_Collection) you can run the
+following command
 
 ```bash
 gcc -Ipath/to/includes -Lpath/to/WasserXR-Library -lwasserxr_ecs -o main main.c
@@ -78,7 +83,9 @@ gcc -Ipath/to/includes -Lpath/to/WasserXR-Library -lwasserxr_ecs -o main main.c
 </TabItem>
 
 <TabItem label="CMake">
-To compile the project with [CMake](https://cmake.org/) you can use something like the following
+
+To compile the project with [CMake](https://cmake.org/) you can use something
+like the following
 
 ```cmake
 cmake_minimum_required(VERSION 3.10)
@@ -98,7 +105,6 @@ cmake --build build
 ```
 
 </TabItem>
-
 </Tabs>
 
 </TabItem>
