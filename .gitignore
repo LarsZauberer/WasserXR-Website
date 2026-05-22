@@ -144,4 +144,5 @@ vite.config.ts.timestamp-*
 # NixOS
 .direnv/
 .envrc
-.result/
+result/
+result
