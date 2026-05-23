@@ -1,0 +1,46 @@
+/* `translate` instead of `transform` so hover composes with Starlight's stagger offset
+   (stagger uses transform: translateY on the same element; overwriting it snaps the card) */
+.card {
+  transition: translate 0.2s ease, box-shadow 0.2s ease;
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.08),
+    0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.card:hover {
+  translate: 0 -4px;
+  box-shadow:
+    0 4px 6px rgba(0, 0, 0, 0.1),
+    0 12px 28px rgba(0, 0, 0, 0.14);
+}
+
+/* !important overrides Starlight's global link color and text-decoration rules */
+.card-action {
+  display: block;
+  width: fit-content;
+  margin: 1rem auto 0;
+  padding: 0.5rem 1.25rem;
+  background-color: var(--sl-color-accent);
+  color: var(--sl-color-white) !important;
+  border-radius: 0.375rem;
+  text-decoration: none !important;
+  font-weight: 600;
+  font-size: 0.875rem;
+  transition: opacity 0.2s ease;
+}
+
+.card-action:hover {
+  opacity: 0.85;
+}
+
+.core-card {
+  display: flex;
+  justify-content: center;
+  margin-top: 1.5rem;
+}
+
+.core-card .card {
+  max-width: 28rem;
+  --sl-card-border: var(--sl-color-red);
+  --sl-card-bg: var(--sl-color-red-low);
+}
