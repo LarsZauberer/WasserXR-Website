@@ -53,27 +53,27 @@ and ready to link against.
 </TabItem>
 <TabItem label="Other">
 
-Clone both repositories and build them with CMake. Install WasserXR-Core first
-since WasserXR depends on it.
+Clone both repositories and build them with CMake. Install WasserXR first, since
+the Core library depends on it.
 
 ```bash
-git clone https://github.com/LarsZauberer/WasserXR-Core
 git clone https://github.com/LarsZauberer/WasserXR
-```
-
-Build and install WasserXR-Core:
-
-```bash
-cd WasserXR-Core
-cmake -S . -B build
-cmake --build build
-sudo cmake --install build
+git clone https://github.com/LarsZauberer/WasserXR-Core
 ```
 
 Then build and install WasserXR:
 
 ```bash
 cd ../WasserXR
+cmake -S . -B build
+cmake --build build
+sudo cmake --install build
+```
+
+Build and install WasserXR-Core:
+
+```bash
+cd WasserXR-Core
 cmake -S . -B build
 cmake --build build
 sudo cmake --install build
