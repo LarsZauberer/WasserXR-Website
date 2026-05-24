@@ -8,8 +8,12 @@ hero:
     file: ../../assets/logo.svg
   actions:
     - text: Getting Started
-      link: /getting_started/
+      link: /getting_started/installation
       icon: rocket
+    - text: Examples
+      link: https://github.com/WasserXR-Demo
+      icon: right-arrow
+      variant: secondary
     - text: API Docs
       link: https://api.wasserxr.com
       icon: external
@@ -54,3 +58,48 @@ import { Card, CardGrid, Aside } from "@astrojs/starlight/components";
     projects.
   </Card>
 </CardGrid>
+
+## Licensing
+
+WasserXR is built on a simple belief: developers should have access to
+everything they need to ship. Licensing scales with your success, not with your
+features.
+
+<CardGrid>
+  <Card title="Indie" icon="star">
+    Build anything without paying a cent. WasserXR is completely free for any
+    project generating less than **100,000 EUR** in annual revenue.
+
+    - Every feature included
+    - Hot reload, full ECS, all components and systems
+    - Source code visible and modifiable
+
+    <a href="/getting_started/installation" class="card-action">Getting Started</a>
+
+  </Card>
+  <Card title="Enterprise" icon="approve-check-circle">
+    When your game takes off and crosses **100,000 EUR** in annual revenue, a
+    commercial license ensures WasserXR can keep growing alongside you.
+
+    - Every feature included
+    - Commercial use license for scaling studios
+    - Helps fund continued engine development
+
+    <a href="mailto:contact@wasserxr.com" class="card-action">Contact</a>
+
+  </Card>
+</CardGrid>
+
+<div class="core-card">
+  <Card title="WasserXR-Core" icon="github">
+    The foundation ECS library powering WasserXR is released under the **MIT
+    License** - unconditionally free.
+
+    - Use it standalone in any project at any scale
+    - Fork it, embed it, ship it, learn from it
+    - Zero revenue thresholds, zero commercial restrictions
+
+    <a href="/getting_started/installation" class="card-action">Getting Started</a>
+
+  </Card>
+</div>

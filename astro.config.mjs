@@ -7,16 +7,22 @@ export default defineConfig({
 	integrations: [
 		starlight({
 			title: 'WasserXR',
+			customCss: ['./src/styles/custom.css'],
 			social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/LarsZauberer/TheSeed' }, {icon: "discord", label: "Discord", href: "https://discord.gg/XcjBZn5pHy"}],
 			sidebar: [
 				{
 					label: 'Getting Started',
-          autogenerate: {directory: "getting_started"},
+					items: [
+						{ slug: 'getting_started/installation' },
+						{ slug: 'getting_started/setup' },
+						{
+							label: 'ECS',
+							autogenerate: { directory: 'getting_started/ECS' },
+						},
+						{ slug: 'getting_started/console' },
+						{ slug: 'getting_started/logging' },
+					],
 				},
-				// {
-				// 	label: 'Reference',
-				// 	autogenerate: { directory: 'reference' },
-				// },
 			],
 		}),
 	],

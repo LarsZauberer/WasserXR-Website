@@ -83,7 +83,7 @@ like this
 <TabItem label="C">
 
 ```c
-int wxr_select_gravity(const WXR_Scene *scene, const WXR_Entity entity) {
+WXR_System_Groups wxr_select_gravity(const WXR_Scene *scene, const WXR_Entity entity) {
     // Check if entity has the component we need
     if (wxr_entity_get_component(scene, entity, "Transform")) {
         return 0;  // Include this entity in group with index 0

@@ -2,9 +2,9 @@
 <!-- Created with Inkscape (http://www.inkscape.org/) -->
 
 <svg
-   width="25.054659mm"
-   height="21.241423mm"
-   viewBox="0 0 25.054659 21.241423"
+   width="28.5mm"
+   height="25.5mm"
+   viewBox="0 0 28.5 25.5"
    version="1.1"
    id="svg1"
    inkscape:version="1.4.2 (ebf0e940d0, 2025-05-08)"
@@ -44,6 +44,10 @@
   </sodipodi:namedview>
   <defs
      id="defs1">
+    <filter id="logo-shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="1" dy="1.5" stdDeviation="0.7"
+        flood-color="#000050" flood-opacity="0.45" />
+    </filter>
     <linearGradient
        id="linearGradient4"
        inkscape:collect="always">
@@ -93,6 +97,7 @@
      inkscape:label="Layer 1"
      inkscape:groupmode="layer"
      id="layer1"
+     filter="url(#logo-shadow)"
      transform="translate(-0.0220684,-0.29189045)">
     <path
        style="fill:url(#linearGradient3);stroke-width:0.264583"
