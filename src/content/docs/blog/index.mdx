@@ -1,0 +1,56 @@
+---
+title: Blog
+description: Updates, development notes, and community stories from WasserXR.
+template: splash
+hero:
+  tagline: Development updates, design notes, and community stories for people already building with WasserXR.
+  actions:
+    - text: Read the first update
+      link: /blog/welcome
+      icon: right-arrow
+    - text: Back to docs
+      link: /
+      icon: open-book
+      variant: secondary
+---
+
+import { Card, CardGrid, Aside } from "@astrojs/starlight/components";
+
+<Aside type="note" title="Community-focused updates" icon="comment">
+
+The WasserXR blog is the place for engine news, implementation notes, and
+community calls that do not belong in the reference docs. Documentation remains
+focused on learning and shipping; the blog gives experienced users a lightweight
+way to follow what is changing.
+
+</Aside>
+
+## Latest posts
+
+<CardGrid>
+  <Card title="Opening the WasserXR Blog" icon="pencil">
+    A quick introduction to what the blog is for: transparent progress updates,
+    deeper dives into ECS design decisions, and places where the community can
+    help shape the engine.
+
+    <a href="/blog/welcome" class="card-action">Read post</a>
+
+  </Card>
+</CardGrid>
+
+## What to expect
+
+<CardGrid>
+  <Card title="Engine updates" icon="rocket">
+    Short, readable summaries of meaningful WasserXR changes, especially when
+    they affect workflows for teams already experimenting with the engine.
+  </Card>
+  <Card title="Design notes" icon="open-book">
+    Context behind ECS, hot reload, tooling, and XR decisions that would be too
+    narrative for the setup documentation.
+  </Card>
+  <Card title="Community calls" icon="github">
+    Invitations to test examples, review direction, and share feedback before
+    ideas become stable documentation.
+  </Card>
+</CardGrid>
