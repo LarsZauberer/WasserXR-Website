@@ -14,6 +14,7 @@ export default defineConfig({
 					label: 'Blog',
 					items: [
 						{ slug: 'blog' },
+						{ slug: 'blog/rewriting-wasserxr-in-rust' },
 						{ slug: 'blog/welcome' },
 					],
 				},

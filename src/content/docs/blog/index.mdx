@@ -5,8 +5,8 @@ template: splash
 hero:
   tagline: Development updates, design notes, and community stories for people already building with WasserXR.
   actions:
-    - text: Read the first update
-      link: /blog/welcome
+    - text: Read the latest update
+      link: /blog/rewriting-wasserxr-in-rust
       icon: right-arrow
     - text: Back to docs
       link: /
@@ -28,6 +28,14 @@ way to follow what is changing.
 ## Latest posts
 
 <CardGrid>
+  <Card title="Rewriting WasserXR in Rust 🦀" icon="rocket">
+    WasserXR is moving its foundation to Rust to reduce hard-to-debug undefined
+    behavior while keeping fast iteration, hot reloading, and flexible C ABI
+    language support.
+
+    <a href="/blog/rewriting-wasserxr-in-rust" class="card-action">Read post</a>
+
+  </Card>
   <Card title="Opening the WasserXR Blog" icon="pencil">
     A quick introduction to what the blog is for: transparent progress updates,
     deeper dives into ECS design decisions, and places where the community can
