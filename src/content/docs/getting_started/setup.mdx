@@ -1,6 +1,6 @@
 ---
 title: Project Setup
-description: How to setup this project
+description: How to set up this project
 sidebar:
   order: 0
 ---
@@ -9,30 +9,30 @@ import { Aside, Tabs, TabItem } from "@astrojs/starlight/components";
 
 <Aside type="caution" title="Platform Support" icon="warning">
   WasserXR has only been tested on **Linux**. It has never been tested on
-  Windows or MacOS and will very likely not work on those platforms at the
+  Windows or macOS and will very likely not work on those platforms at the
   moment.
 </Aside>
 
 WasserXR consists of two parts: **WasserXR**, the foundational ECS, and
 **WasserXR-Core**, the standard library of
 [components](/getting_started/ecs/components),
-[systems](/getting_started/ecs/systems) and
-[asset types](/getting_started/ecs/assets).
+[systems](/getting_started/ecs/systems), and
+asset types.
 
 <Tabs syncKey="lang">
 <TabItem label="Rust">
 
-To build a rust project with WasserXR you first initialize a rust project with
+To build a Rust project with WasserXR, first initialize a Rust project with
 
 ```bash
 cargo init
 cargo add wasserxr
 ```
 
-In the `main.rs` file you can have the following content
+In `main.rs`, add the following content:
 
 ```rust
-use wasserxr::scene::{Scene, logging::file_logger};
+use wasserxr::scene::{logging::file_logger, Scene};
 
 fn main() {
     let mut scene = Scene::new();
@@ -51,10 +51,9 @@ fn main() {
 }
 ```
 
-Before running download the latest
+Before running the project, download the latest
 [WasserXR-Core Plugin](https://github.com/LarsZauberer/WasserXR-Core/tags)
-version from GitHub and put the `.so` (on linux) or the `.dll` (on windows) in
-your project directory.
+version from GitHub and put the `.so` file for Linux in your project directory.
 
 When running this with
 
@@ -62,8 +61,8 @@ When running this with
 cargo run
 ```
 
-you should simply see in the terminal a user interface (TUI). In the next
-chapters we will see what you can do with that.
+you should see a terminal user interface (TUI). In the next chapters, we will
+see what you can do with it.
 
 </TabItem>
 </Tabs>

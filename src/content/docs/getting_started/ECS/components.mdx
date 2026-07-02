@@ -9,8 +9,8 @@ import { Aside, Tabs, TabItem } from "@astrojs/starlight/components";
 
 Components are pure data containers in ECS. They hold data for the
 [entities](/getting_started/ecs/entities) but contain no logic themselves (this
-is the task of [systems](/getting_started/ecs/systems). Think of components as
-the attributes that define what an [entity](/getting_started/ecs/entity) is and
+is the task of [systems](/getting_started/ecs/systems)). Think of components as
+the attributes that define what an [entity](/getting_started/ecs/entities) is and
 what it can do.
 
 ## Structure of a Component
@@ -18,507 +18,99 @@ what it can do.
 To make a component work with WasserXR's ECS, you need to provide three
 functions:
 
-- **Creator**: Allocates and initializes a new component instance (Basically,
+- **Creator**: Allocates and initializes a new component instance (basically,
   the **constructor**)
-- **Destroyer**: Frees a component instance and cleans up resources (Basically,
+- **Destroyer**: Frees a component instance and cleans up resources (basically,
   the **destructor**)
 - **Schema**: Defines the component's fields so systems can access them without
-  knowing about them. Also it is used to serialize and deserialize the
-  component.
+  knowing about the Rust struct directly. It is also used to serialize and
+  deserialize the component.
 
-## Creating Your First Component
+Luckily there are nice macros to help you define those functions easily.
 
-Let's create a simple `Health` component step by step.
-
-### Step 1: Define the Component Struct
-
-Start with a simple struct containing your data:
+## Writing Your First Component
 
 <Tabs syncKey="lang">
-<TabItem label="C">
+<TabItem label="Rust">
 
-```c
-// Health.c
-typedef struct Health {
-    int current;
-    int maximum;
-} Health;
-```
+To create a component, you can write something like this:
 
-</TabItem>
-</Tabs>
+```rust
+#[component]
+#[derive(Default)]
+struct Health {
+  #[mutable]
+  current_health: usize,
+  max_health: usize
+}
 
-Again, keep it simple. Components are just data, no methods or logic.
-
-### Step 2: Implement the Creator Function
-
-The creator allocates memory and initializes the component:
-
-<Tabs syncKey="lang">
-<TabItem label="C">
-
-```c
-// Health.c
-#include <stdlib.h>
-
-void *wxr_create_Health() {
-    Health *health = malloc(sizeof(Health));
-
-    // Initialize with sensible defaults
-    health->current = 100;
-    health->maximum = 100;
-
-    return health;
+#[component_creator(Health)]
+fn create_health(_scene: &mut Scene) -> Option<Health> {
+  Some(Health::default())
 }
 ```
 
-</TabItem>
-</Tabs>
+<Aside type="note" title="Name of the component" icon="information">
 
-<Aside type="caution" title="Function Naming Requirement" icon="warning">
-
-The `wxr_` prefix is **required** for all component functions. WasserXR's plugin
-loader searches for functions with these exact prefixes: `wxr_create_`,
-`wxr_destroy_`, and `wxr_schema_`. Your component name (like `Health`) can be
-anything, but the function names must start with `wxr_`.
-
-When using other languages like C++, Rust, ... you might need to disable
-[name mangling](https://en.wikipedia.org/wiki/Name_mangling) so that the
-compiler doesn't rename the functions in the
-[C ABI](https://en.wikipedia.org/wiki/Application_binary_interface)
+The name of the component is determined by the name of the struct. In this case,
+it is `"Health"`
 
 </Aside>
 
-<Aside type="note" title="Allocation Methods" icon="information">
-
-If you want to use some other form of allocation method, you can choose to do
-so. As long as the component outlives the function and you can return to the ECS
-a pointer.
-
-</Aside>
-
-### Step 3: Implement the Destroyer Function
-
-The destroyer frees the component's memory:
-
-<Tabs syncKey="lang">
-<TabItem label="C">
-
-```c
-void wxr_destroy_Health(void *ptr) {
-    free(ptr);
-}
-```
-
 </TabItem>
 </Tabs>
-
-If your component allocates additional resources (like strings or arrays), free
-them here before freeing the component itself.
-
-### Step 4: Implement the Schema Function
-
-The schema function tells WasserXR about the component's fields. We'll start
-with a manual approach:
-
-<Tabs syncKey="lang">
-<TabItem label="C">
-
-```c
-void wxr_schema_Health(WXR_Component_Schema *schema) {
-  WXR_SCHEMA_FIELD *current_field = wxr_create_component_field("current", WXR_L, null, null, null, null);
-  wxr_add_field_to_component_schema(schema, current_field);
-
-  WXR_SCHEMA_FIELD *maximum_field = wxr_create_component_field("maximum", WXR_L, null, null, null, null);
-  wxr_add_field_to_component_schema(schema, maxiumum_field);
-}
-```
-
-</TabItem>
-</Tabs>
-
-<Aside type="note" title="Type Hints" icon="information">
-
-The `WXR_L` is a type hint. In this case it stands for long. It is mostly used
-by the Console to infer how to interpret the user input and how to output it.
-
-Other type hints would be
-
-- `WXR_L` (long)
-- `WXR_F` (float)
-- `WXR_C` (char)
-- `WXR_BLOB` (no special data type)
-- `WXR_S` (string)
-- `WXR_BLOB_ARRAY` (array of no special data type)
-
-</Aside>
-
-All the `null` values are placeholders for functions/operations associated to
-the field. You can **optionally** define
-
-- getter
-- setter
-- serializer
-- deserializer
-
-functions. To associate the functions with the field, you can pass the function
-pointer into the corresponding argument. The argument order is like the list
-above.
-
-<Aside type="note" title="Access Control of Fields" icon="information">
-
-If you have fields that should only be read-only and not serialized or
-deserialized by the ECS, you can of course do this. You can only define a getter
-and nothing else. You can also only define a setter.
-
-</Aside>
-
-We will now, look how to create such operation functions.
-
-#### Getter Function
-
-The getter function is a function that returns a `const void *` of the field
-data.
-
-<Tabs syncKey="lang">
-<TabItem label="C">
-
-```c
-const void *wxr_get_Health_current(const void *ptr) {
-  const Health *component = ptr;
-  return &component->current;
-}
-```
-
-</TabItem>
-</Tabs>
-
-<Aside type="note" title="Ownership of the data" icon="information">
-
-By convention you should **not modify** and you **don't own** the data returned
-by the getter. Of course, if you know what you are doing, you can ignore that
-which in some cases might be a good decision.
-
-</Aside>
-
-#### Setter Function
-
-The setter function takes in a `const void *` as the data to set.
-
-<Tabs syncKey="lang">
-<TabItem label="C">
-
-```c
-const void *wxr_set_Health_current(void *ptr, const void *data) {
-  Health *component = ptr;
-  if (data) {
-    component->current = *(const int*) data;
-  }
-}
-```
-
-</TabItem>
-</Tabs>
-
-<Aside type="note" title="Ownership of the data" icon="information">
-
-By convention the data passed to the setter is still owned by the caller. You
-should copy the data. Of course, if you know what you are doing, you can ignore
-that.
-
-</Aside>
-
-#### Serializer
-
-The serializer function should serialize the data of your field into a byte
-array (i.e. `char *`).
-
-The serialization has to fulfill the following format:
-
-- 8 bytes for a `size_t` that defines long the byte array you will return is.
-- String with 0 byte termination that is the name of the field as defined in the
-  schema function.
-- Then you can put your data
-
-As valid serialization could look like this
-
-<Tabs syncKey="lang">
-<TabItem label="C">
-
-```c
-char *wxr_serialize_Health_current(const void *ptr) {
-  const Health *component = ptr;
-  char *field_name = "current";
-
-  size_t allocation = sizeof(size_t) + strlen(field_id) + 1 + sizeof(int);
-  char *data = (char *)malloc(allocation);
-  char *iter = data;
-
-  memcpy(iter, &allocation, sizeof(size_t));
-  iter += sizeof(size_t);
-
-  memcpy(iter, field_name, strlen(field_name) + 1);
-  iter += strlen(field_name) + 1;
-
-  memcpy(iter, &component->current, sizeof(int));
-  iter += sizeof(int);
-
-  return data;
-}
-```
-
-</TabItem>
-</Tabs>
-
-#### Deserializer
-
-The deserializer reverses the process of the serializer.
-
-The great thing is that the pointer passed to the deserializer already starts at
-the data point. So you don't need to parse the lenght and string.
-
-<Tabs syncKey="lang">
-<TabItem label="C">
-
-```c
-int wxr_deserialize_Health_current(void *ptr, const char *data) {
-  Health *component = ptr;
-  memcpy(&component->current, data, sizeof(int));
-  return 0;
-}
-```
-
-</TabItem>
-</Tabs>
-
-<Aside type="note" title="Return Value" icon="information">
-
-If your deserializer maybe determines the deserialization as a failure, you can
-also return a **non-zero** status code.
-
-</Aside>
 
 ## Creating and Destroying Components
 
 Components cannot exist without an [entity](/getting_started/ecs/entities).
-Every component lives as long as an [entity](/getting_started/ecs/entity) lives.
+Every component lives on an [entity](/getting_started/ecs/entities) and cannot
+outlive it.
 
-When you destroy an [entity](/getting_started/ecs/entities) then all the
+When you destroy an [entity](/getting_started/ecs/entities), all the
 components associated with it will be destroyed.
 
 <Tabs syncKey="lang">
-<TabItem label="C">
+<TabItem label="Rust">
 
-To instantiate a component you can run
+To instantiate a component, you can run:
 
-```c
-WXR_Scene *scene = wxr_create_scene();
+```rust
+let _ = scene.add_component(entity_id, "Health".to_owned());
+```
 
-WXR_Entity entity = wxr_add_entity(scene);
+To destroy a component, you can run:
 
-void *health_ptr = wxr_add_component(scene, entity, "Health");
+```rust
+let _ = scene.remove_component(entity_id, "Health");
 ```
 
 </TabItem>
 </Tabs>
-
-<Aside type="note" title="Name of your component" icon="information">
-
-The name of your component will be the name behind the function prefixes like
-`wxr_create_`, `wxr_destroy_`, `wxr_schema_`.
-
-In this case it was always `Health`.
-
-</Aside>
 
 <Aside type="caution" title="Same components on the same entity" icon="warning">
 
-An [entity](/getting_started/ecs/entities) can only have a component type
-instantiate once on it.
+An [entity](/getting_started/ecs/entities) can only have each component type
+instantiated once on it.
 
-If you try to reinstantiate "Health" on the component, it will return `null`.
-
-</Aside>
-
-<Tabs syncKey="lang">
-<TabItem label="C">
-
-To destroy a component you can run
-
-```c
-int status = wxr_remove_component(scene, entity, "Health");
-```
-
-</TabItem>
-</Tabs>
-
-<Tabs syncKey="lang">
-<TabItem label="C">
-
-To get a component from an entity you can run
-
-```c
-void *component = wxr_entity_get_component(scene, entity, "Health");
-```
-
-</TabItem>
-</Tabs>
-
-<Aside type="note" title="Component not found" icon="information">
-
-If the component wasn't found on the entity, it will return `null`.
+If you try to instantiate `"Health"` on the same entity again, it will return an
+error.
 
 </Aside>
 
 ## Accessing Fields
 
-You can access fields without the compiler knowing anything about your
-components by using the ECS.
-
-<Aside type="note" title="With compiler knowledge" icon="information">
-
-If you want to, you can use the component pointers directly to index into your
-component struct. This is recommended for private field usage and not for the
-public API.
-
-Also the idea of WasserXR's smaller compilation units will therefore be a bit
-less small.
-
-</Aside>
-
 <Tabs syncKey="lang">
-<TabItem label="C">
+<TabItem label="Rust">
 
-To update your health, you could write something like this
+In Rust, you can access component fields by getting immutable or mutable
+references with the corresponding functions:
 
-```c
-void *health = wxr_entity_get_component(scene, entity, "Health");
-int current_health = *(const int*) wxr_get(scene, health, "current");
-current_health -= 10;
-wxr_set(scene, health, &current_health)
-```
+```rust
+// Immutable references only
+let query_result: Result<(&usize, &usize), SceneError> = scene.query::<(&usize, &usize)>(entity_id, "Health", &["current_health", "max_health"]);
 
-</TabItem>
-</Tabs>
-
-## Serialization and Deserialization
-
-The operations of serialization and deserialization in the component are mainly
-used to have component data survive a hotreload or saving the data when saving
-the Scene.
-
-## Macros
-
-As you might have seen, when creating a lot of components, you write a lot of
-boilerplate. To reduce that, we provide simple macros to create easier schemas.
-
-### Basic Access Macros
-
-<Tabs syncKey="lang">
-<TabItem label="C">
-
-```c
-// Generates: get_Health_current() and set_Health_current()
-WXR_BASIC_ACCESS(Health, current, &component->current, sizeof(int));
-WXR_BASIC_ACCESS(Health, maximum, &component->maximum, sizeof(int));
-```
-
-</TabItem>
-</Tabs>
-
-<Aside type="caution" title="Expression managmenet" icon="warning">
-
-The path to the field value always has to start with the `component` identifier.
-
-</Aside>
-
-<Aside type="note" title="Read-Only Field" icon="information">
-
-If you only need a getter (read-only field), use `WXR_BASIC_GETTER` instead.
-
-</Aside>
-
-### String Field Macros
-
-Strings need special handling for memory management. Hence, there exists a
-special macro for string fields:
-
-<Tabs syncKey="lang">
-<TabItem label="C">
-
-```c
-typedef struct Item {
-    char *name;
-    int value;
-} Item;
-
-// String field with automatic memory management
-WXR_STRING_ACCESS(Item, name, component->name);
-
-// Regular integer field
-WXR_BASIC_ACCESS(Item, value, &component->value, sizeof(int));
-```
-
-</TabItem>
-</Tabs>
-
-The string macros automatically handle freeing old strings and allocating new
-ones.
-
-### Serialization Macros
-
-For the serialization and deserialization there also exists some macros
-
-<Tabs syncKey="lang">
-<TabItem label="C">
-
-```c
-WXR_BASIC_SERIALIZERS(Health, current, &component->current, sizeof(int));
-WXR_BASIC_SERIALIZERS(Health, maximum, &component->maximum, sizeof(int));
-```
-
-</TabItem>
-</Tabs>
-
-<Aside type="note" title="String Serializers" icon="information">
-
-For strings there also exists the seperate
-`WXR_STRING_SERIALIZERS(Item, name, component->name)`
-
-</Aside>
-
-<Aside type="note" title="Serializers using the setter" icon="information">
-
-If you want the serializer to use the setter function of the field, you can also
-use the macro combination
-
-<Tabs syncKey="lang">
-<TabItem label="C">
-
-```c
-WXR_BASIC_SERIALIZE(Health, current, &component->current, sizeof(int))
-WXR_SET_DESERIALIZE(Health, current, &component->current, wxr_set_Health_current)
-```
-
-</TabItem>
-</Tabs>
-
-</Aside>
-
-### Schema Registration Macros
-
-To make registering your fields easier, you can use the following macros
-
-<Tabs syncKey="lang">
-<TabItem label="C">
-
-```c
-void wxr_schema_Health(WXR_Component_Schema *schema) {
-  // Explicit so you could also say that some operations are `null`
-  WXR_SCHEMA_FIELD(WXR_L, current, wxr_get_Health_current, wxr_set_Health_current, wxr_serialize_Health_current, wxr_deserialize_Health_current);
-  // or if all the functions are defined and are called in that style
-  WXR_SCHEMA_FIELD_FULL(Health, WXR_L, maximum)
-}
+// Mutable and immutable references
+let query_mut_result: Result<(&mut usize, &usize), SceneError> = scene.query_mut::<(&mut usize, &usize)>(entity_id, "Health", &["current_health", "max_health"]);
 ```
 
 </TabItem>
