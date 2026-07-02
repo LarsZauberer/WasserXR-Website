@@ -21,7 +21,6 @@ export default defineConfig({
 				{
 					label: 'Getting Started',
 					items: [
-						{ slug: 'getting_started/installation' },
 						{ slug: 'getting_started/setup' },
 						{
 							label: 'ECS',
