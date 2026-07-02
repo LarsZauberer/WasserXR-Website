@@ -10,8 +10,8 @@ import { Aside, Tabs, TabItem } from "@astrojs/starlight/components";
 Components are pure data containers in ECS. They hold data for the
 [entities](/getting_started/ecs/entities) but contain no logic themselves (this
 is the task of [systems](/getting_started/ecs/systems)). Think of components as
-the attributes that define what an [entity](/getting_started/ecs/entities) is and
-what it can do.
+the attributes that define what an [entity](/getting_started/ecs/entities) is
+and what it can do.
 
 ## Structure of a Component
 
@@ -66,8 +66,8 @@ Components cannot exist without an [entity](/getting_started/ecs/entities).
 Every component lives on an [entity](/getting_started/ecs/entities) and cannot
 outlive it.
 
-When you destroy an [entity](/getting_started/ecs/entities), all the
-components associated with it will be destroyed.
+When you destroy an [entity](/getting_started/ecs/entities), all the components
+associated with it will be destroyed.
 
 <Tabs syncKey="lang">
 <TabItem label="Rust">
@@ -112,6 +112,71 @@ let query_result: Result<(&usize, &usize), SceneError> = scene.query::<(&usize, 
 // Mutable and immutable references
 let query_mut_result: Result<(&mut usize, &usize), SceneError> = scene.query_mut::<(&mut usize, &usize)>(entity_id, "Health", &["current_health", "max_health"]);
 ```
+
+</TabItem>
+</Tabs>
+
+## Field Permissions
+
+<Tabs syncKey="lang">
+<TabItem label="Rust">
+
+Field attributes tell WasserXR which fields should be visible to the ECS and
+what the ECS is allowed to do with them.
+
+If a field has no field attributes, WasserXR will generate the normal access and
+serialization functions for it. This is usually what you want for simple data:
+
+```rust
+#[component]
+#[derive(Default)]
+struct Health {
+  current_health: usize,
+  max_health: usize
+}
+```
+
+Use `#[mutable]` when a system should be able to change the field through
+`scene.query_mut`.
+
+```rust
+#[component]
+#[derive(Default)]
+struct Health {
+  #[mutable]
+  current_health: usize,
+  max_health: usize
+}
+```
+
+In this example, systems can change `current_health`, but `max_health` is still
+read-only through the ECS.
+
+Use `#[none]` for internal data that should not be visible to the ECS at all.
+
+```rust
+#[component]
+#[derive(Default)]
+struct Health {
+  #[mutable]
+  current_health: usize,
+
+  #[none]
+  cached_display_text: String
+}
+```
+
+You cannot combine `#[none]` with other field attributes, because it means "do
+not generate ECS access for this field".
+
+For more advanced cases, you can choose only specific generated functions:
+
+- `#[getter]` makes the field readable through `scene.query`.
+- `#[serializer]` saves the field when the scene is serialized.
+- `#[deserializer]` restores the field when the scene is loaded again.
+
+Most beginner components only need no attribute or `#[mutable]`. Reach for
+`#[none]` when a field is only an implementation detail.
 
 </TabItem>
 </Tabs>
