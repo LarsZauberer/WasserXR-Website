@@ -1,0 +1,35 @@
+---
+title: Scene
+description: What is the Scene in WasserXR?
+sidebar:
+  order: 1
+---
+
+import { Aside, Tabs, TabItem } from "@astrojs/starlight/components";
+
+The scene is the main object in WasserXR. It is the **runtime** for the whole
+ECS. It manages lifetimes of all plugins, assets, resources, entities,
+components and systems.
+
+## Using the Scene
+
+<Tabs syncKey="lang">
+<TabItem label="Rust">
+
+To create a scene in rust, you can simple call
+
+```rust
+let mut scene = Scene::new();
+```
+
+After creating a scene and loading all the
+[plugins](/getting_started/ecs/plugins) you can let the scene tick by running
+
+```rust
+while scene.tick() {}
+```
+
+This will run all the active systems in the scene.
+
+</TabItem>
+</Tabs>
