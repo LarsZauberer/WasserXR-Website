@@ -8,69 +8,85 @@ sidebar:
 import { Aside, Tabs, TabItem } from "@astrojs/starlight/components";
 
 Plugins are not part of a standard ECS architecture. In WasserXR, plugins are a
-way of bundling components and systems into **reusable modules**. These modules
-can then be seperately compiled from other parts of your project. Unlike
-standard ECS implementations, WasserXR uses a plugin system to enable one of its
-most powerful features: **hot-reloading**.
+way of bundling components, systems and asset types into **reusable modules**.
+These modules can then be seperately compiled from other parts of your project.
+Unlike standard ECS implementations, WasserXR uses a plugin system to enable one
+of its most powerful features: **hot-reloading**.
 
 A plugin is simply a shared library (`.so` file on Linux, `.dll` on Windows)
-that contains one or more components and systems.
+that contains one or more components, systems or asset types.
 
 ## Creating Your First Plugin
 
-A plugin is just a compiled library that exports functions to the
-**[C ABI](https://en.wikipedia.org/wiki/Application_binary_interface)**
-following specific naming conventions. This means that you can use **any**
-language that supports the C ABI like C, C++, Rust, Go, ... .
-
-<Aside type="caution" title="Name Mangling" icon="warning">
-  A lot of languages are using something called [name
-  mangling](https://en.wikipedia.org/wiki/Name_mangling). While this can be
-  often disabled, you should not forget to do so. Otherwise, WasserXR will not
-  be able to find your functions.
-</Aside>
-
-In other words, if you have correctly written your
-[Component](/getting_started/ecs/components) and [System](/getting_started/ecs/systems)
-functions you can compile them together into one shared library.
-
-To create a library you just start building [Components](../components) or
-[Systems](../systems) and compile them.
-
 <Tabs syncKey="lang">
-<TabItem label="C">
+<TabItem label="Rust">
 
-<Tabs syncKey="build-c">
-<TabItem label="GCC">
+To implement a plugin you have two options. Either you implement it directly in
+the `lib.rs` of your main crate or you make a seperate crate for it. Making a
+seperate crate makes sense, when you want to publish your components or systems
+seperately.
 
-```bash
-gcc -shared -fPIC -o libmygame.so \
-    components/Health.c \
-    systems/DamageSystem.c \
-    -I/path/to/wasserxr/include \
-    -L/path/to/wasserxr/lib -lwasserxr_ecs
+Regardless, to make rust build dynamic libraries you have to add the following
+to your `Cargo.toml` file.
+
+```toml
+[lib]
+crate-type = ["cdylib", "staticlib", "rlib"]
 ```
 
-The `-shared` flag tells GCC to create a shared library, and `-fPIC` generates
-position-independent code, which is required for shared libraries.
+This will tell rust to build library as a rust crate, static library (`.a`) and
+as a dynamic library (`.so`)
 
-</TabItem>
+Furthermore, add the following linker options to your `build.rs` file to fully
+export all your symbols to the ABI:
 
-<TabItem label="CMake">
-
-```cmake
-# Create a shared library for your plugin
-add_library(my_game_plugin SHARED
-    src/components/Health.c
-    src/systems/DamageSystem.c
-)
-
-# Link against WasserXR's ECS library
-target_link_libraries(my_game_plugin PRIVATE wasserxr_ecs)
+```rust
+fn main() {
+    if std::env::var("CARGO_CFG_TARGET_OS").as_deref() == Ok("linux") {
+        println!("cargo::rustc-link-arg=-Wl,--export-dynamic");
+    }
+}
 ```
 
 </TabItem>
 </Tabs>
+
+## Loading and Unloading Plugins
+
+<Tabs syncKey="lang">
+<TabItem label="Rust">
+
+To load and unload a plugin you can use the following functions
+
+```rust
+let _ = scene.load_plugin("./path/to/plugin.so".to_owned());
+
+let _ = scene.unload_plugin("./path/to/plugin.so");
+```
+
+</TabItem>
+</Tabs>
+
+<Aside type="caution" title="Unloading a plugin" icon="warning">
+
+When unloading a plugin, this will destroy all components, systems and assets
+coming from the plugin.
+
+</Aside>
+
+## Reloading Plugins
+
+This is the most special feature of WasserXR. When you change your code, you can
+**recompile your plugin** and reload it **without restarting your application**:
+
+<Tabs syncKey="lang">
+<TabItem label="Rust">
+
+In rust, you can trigger a reload by running
+
+```rust
+let _ = scene.reload();
+```
 
 </TabItem>
 </Tabs>
@@ -79,13 +95,12 @@ target_link_libraries(my_game_plugin PRIVATE wasserxr_ecs)
 
 WasserXR supports both dynamic and static linking for your plugins:
 
-|                                           | Dynamic Linking | Static Linking |     |     |
-| ----------------------------------------- | --------------- | -------------- | --- | --- |
-| Purpose                                   | Development     | Release        |     |     |
-| Filetype                                  | `.so`           | `.o` or `.a`   |     |     |
-| Needs Plugin Loading                      | ✅️             | ❌️            |     |     |
-| Allows Hotreloading                       | ✅️             | ❌️            |     |     |
-| Needs the Plugins on end system installed | ✅️             | ❌️            |     |     |
+|                                           | Dynamic Linking        | Static Linking |     |     |
+| ----------------------------------------- | ---------------------- | -------------- | --- | --- |
+| Purpose                                   | Development or Modding | Release        |     |     |
+| Needs Plugin Loading                      | ✅️                    | ❌️            |     |     |
+| Allows Hotreloading                       | ✅️                    | ❌️            |     |     |
+| Needs the Plugins on end system installed | ✅️                    | ❌️            |     |     |
 
 <Aside type="note" title="Hybrid Approach" icon="information">
   You can mix both approaches: statically link core functionality and
@@ -93,77 +108,58 @@ WasserXR supports both dynamic and static linking for your plugins:
   support**. The engine treats them the same way once loaded.
 </Aside>
 
-## Using Plugins
+### How to do static linking
 
-### Loading Plugins
+<Tabs syncKey="lang">
+<TabItem label="Rust">
 
-Once you've compiled your plugin, load it into a scene:
+In rust, it is recommended to use the following setup, when you would like to
+have a create development and release setup and you are working with other rust
+plugins.
 
-```c
-WXR_Scene *scene = wxr_create_scene();
+Add to your `Cargo.toml` the following
 
-// Load your plugin
-int result = wxr_load_plugin(scene, "libmygame.so");
-if (result != 0) {
-    printf("Failed to load plugin!\n");
+```toml
+[dependencies]
+<your_plugin> = {version = "<version>", optional = true}
+
+[features]
+default = []
+static = ["dep:wasserxr-core"]
+```
+
+Then in your `main.rs` you add the following to ensure that all the symbols are
+properly accessible in the end binary
+
+```rust
+// At the top of your file
+#[cfg(feature = "static")]
+use <your_plugin> as _;
+
+// ...
+
+// Where you load the plugins in your `main` function
+#[cfg(not(feature = "static"))]
+{
+  scene.load_plugin("<path_to_dynamic_library>".to_owned()).expect("Failed to find plugin");
 }
 ```
 
-When a plugin loads successfully, all its components and systems become
-available. You can immediately start using them to create components and add
-systems.
+With this setup, when you run
 
-### Unloading Plugins
-
-You can unload a plugin when you no longer need it:
-
-```c
-wxr_unload_plugin(scene, "libmygame.so");
+```bash
+cargo run
 ```
 
-<Aside type="caution" title="Unloading vs. Reloading" icon="warning">
-  Unloading a plugin **destroys all components and systems** associated with it.
-  Any entities using those components will have them removed. If you just want
-  to reload the plugin, use reloading instead.
-</Aside>
+It will automatically use dynamic linking for development.
 
-<Aside type="note" title="Resetting the Scene" icon="information">
-  When **resetting** the scene with `wxr_reset_scene(scene)`, all plugins will
-  stay loaded. Only [entities](../entities), [components](../components),
-  [systems](../systems) will be destroyed.
-</Aside>
+When you run
 
-### Reloading Plugins
-
-This is the most special feature of WasserXR. When you change your code, you can
-**recompile your plugin** and reload it **without restarting your application**:
-
-```c
-// From inside a system
-wxr_set_scene_reload(scene);
+```bash
+cargo run --release --features static
 ```
 
-<Aside type="note" title="When is the reload happening" icon="information">
-  The current tick is still finished. All systems will once run through and at
-  the end of the tick the reload will be executed. This makes sure that the
-  current system properly terminates and the code where it is executed is
-  invalidated.
-</Aside>
+Then it will statically link everything together and make a clean release build.
 
-<Aside type="caution" title="Immediate Reloading" icon="warning">
-  If you need to trigger an immediate reload, you can use `wxr_reload(scene)`.
-  Be careful: If this is triggered within a system, this will invalidate the
-  code memory the system lives in, which will result in undefined behaviour or
-  segmentation faults.
-</Aside>
-
-<Aside type="tip" title="Hot-Reloading Workflow" icon="rocket">
-A typical workflow looks like this:
-1. Edit your component or system code
-2. Recompile your plugin (keep the app running!)
-3. Press a hotkey that calls `wxr_set_scene_reload()`
-4. See your changes instantly
-
-This keeps you in the flow of development without constant restarts.
-
-</Aside>
+</TabItem>
+</Tabs>
