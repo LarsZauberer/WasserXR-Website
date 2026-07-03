@@ -8,34 +8,34 @@ sidebar:
 import { Aside, Tabs, TabItem } from "@astrojs/starlight/components";
 
 Plugins are not part of a standard ECS architecture. In WasserXR, plugins are a
-way of bundling components, systems and asset types into **reusable modules**.
-These modules can then be seperately compiled from other parts of your project.
-Unlike standard ECS implementations, WasserXR uses a plugin system to enable one
-of its most powerful features: **hot-reloading**.
+way of bundling components, systems, and asset types into **reusable modules**.
+These modules can be compiled separately from other parts of your project.
+WasserXR uses plugins to enable one of its most powerful features:
+**hot-reloading**.
 
-A plugin is simply a shared library (`.so` file on Linux, `.dll` on Windows)
-that contains one or more components, systems or asset types.
+A plugin is simply a shared library, such as a `.so` file on Linux, that
+contains one or more components, systems, or asset types.
 
 ## Creating Your First Plugin
 
 <Tabs syncKey="lang">
 <TabItem label="Rust">
 
-To implement a plugin you have two options. Either you implement it directly in
-the `lib.rs` of your main crate or you make a seperate crate for it. Making a
-seperate crate makes sense, when you want to publish your components or systems
-seperately.
+To implement a plugin, you have two options. Either you implement it directly in
+the `lib.rs` of your main crate, or you make a separate crate for it. A separate
+crate makes sense when you want to publish your components or systems
+separately.
 
-Regardless, to make rust build dynamic libraries you have to add the following
-to your `Cargo.toml` file.
+To make Rust build a dynamic library, add the following to your `Cargo.toml`
+file:
 
 ```toml
 [lib]
 crate-type = ["cdylib", "staticlib", "rlib"]
 ```
 
-This will tell rust to build library as a rust crate, static library (`.a`) and
-as a dynamic library (`.so`)
+This tells Rust to build the plugin as a normal Rust library, a static library
+(`.a`), and a dynamic library (`.so`).
 
 Furthermore, add the following linker options to your `build.rs` file to fully
 export all your symbols to the ABI:
@@ -56,7 +56,7 @@ fn main() {
 <Tabs syncKey="lang">
 <TabItem label="Rust">
 
-To load and unload a plugin you can use the following functions
+To load and unload a plugin, use the following functions:
 
 ```rust
 let _ = scene.load_plugin("./path/to/plugin.so".to_owned());
@@ -69,8 +69,8 @@ let _ = scene.unload_plugin("./path/to/plugin.so");
 
 <Aside type="caution" title="Unloading a plugin" icon="warning">
 
-When unloading a plugin, this will destroy all components, systems and assets
-coming from the plugin.
+Unloading a plugin removes all systems, asset types, assets, and components
+that came from that plugin.
 
 </Aside>
 
@@ -82,7 +82,7 @@ This is the most special feature of WasserXR. When you change your code, you can
 <Tabs syncKey="lang">
 <TabItem label="Rust">
 
-In rust, you can trigger a reload by running
+In Rust, you can trigger a reload by running:
 
 ```rust
 let _ = scene.reload();
@@ -95,71 +95,73 @@ let _ = scene.reload();
 
 WasserXR supports both dynamic and static linking for your plugins:
 
-|                                           | Dynamic Linking        | Static Linking |     |     |
-| ----------------------------------------- | ---------------------- | -------------- | --- | --- |
-| Purpose                                   | Development or Modding | Release        |     |     |
-| Needs Plugin Loading                      | ✅️                    | ❌️            |     |     |
-| Allows Hotreloading                       | ✅️                    | ❌️            |     |     |
-| Needs the Plugins on end system installed | ✅️                    | ❌️            |     |     |
+|                              | Dynamic Linking        | Static Linking |
+| ---------------------------- | ---------------------- | -------------- |
+| Purpose                      | Development or modding | Release builds |
+| Needs plugin loading         | Yes                    | No             |
+| Allows hot-reloading         | Yes                    | No             |
+| Needs plugin files at runtime | Yes                   | No             |
 
 <Aside type="note" title="Hybrid Approach" icon="information">
   You can mix both approaches: statically link core functionality and
-  dynamically load optional features. This allows also for direct **modding
+  dynamically load optional features. This also allows direct **modding
   support**. The engine treats them the same way once loaded.
 </Aside>
 
-### How to do static linking
+### Static Linking
 
 <Tabs syncKey="lang">
 <TabItem label="Rust">
 
-In rust, it is recommended to use the following setup, when you would like to
-have a create development and release setup and you are working with other rust
+In Rust, it is recommended to use the following setup when you want a clean
+development and release setup and you are working with other Rust
 plugins.
 
-Add to your `Cargo.toml` the following
+Add the following to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-<your_plugin> = {version = "<version>", optional = true}
+your-plugin = { version = "<version>", optional = true }
 
 [features]
 default = []
-static = ["dep:wasserxr-core"]
+static = ["dep:your-plugin"]
 ```
 
-Then in your `main.rs` you add the following to ensure that all the symbols are
-properly accessible in the end binary
+Then, in `main.rs`, add the following to make the static plugin symbols
+available in the final binary:
 
 ```rust
 // At the top of your file
 #[cfg(feature = "static")]
-use <your_plugin> as _;
+use your_plugin as _;
 
 // ...
 
 // Where you load the plugins in your `main` function
 #[cfg(not(feature = "static"))]
 {
-  scene.load_plugin("<path_to_dynamic_library>".to_owned()).expect("Failed to find plugin");
+  scene
+    .load_plugin("./path/to/plugin.so".to_owned())
+    .expect("Failed to find plugin");
 }
 ```
 
-With this setup, when you run
+With this setup, when you run:
 
 ```bash
 cargo run
 ```
 
-It will automatically use dynamic linking for development.
+it will use dynamic linking for development.
 
-When you run
+When you run:
 
 ```bash
 cargo run --release --features static
 ```
 
-Then it will statically link everything together and make a clean release build.
+it will statically link everything together and make a clean release build.
 
 </TabItem>
 </Tabs>

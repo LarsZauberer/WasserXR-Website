@@ -7,22 +7,23 @@ sidebar:
 
 import { Aside, Tabs, TabItem } from "@astrojs/starlight/components";
 
-Assets are also not a necessarily standard ECS object. In WasserXR assets are
-pretty similar to [components](/getting_started/ecs/components) but have a lot
-of differences.
+Assets are also not necessarily a standard ECS object. In WasserXR, assets are
+similar to [components](/getting_started/ecs/components), but they have some
+important differences.
 
-An asset is a global object that stores information. This information is cached
-and immutable. Every asset has an asset type, which defines how to construct a
-certain asset from a data string. There can be multiple assets creates from a
-single asset type.
+An asset is a global cached object. It is created from an asset type and a data
+string. The asset type defines how to construct the asset, and the data string
+identifies the concrete asset to load.
+
+Use assets for shared data that can be loaded once and read by many entities,
+such as models, textures, shaders, or level data.
 
 <Aside type="note" title="Example: Model" icon="open-book">
 
-In the WasserXR-Core plugin, there exists a `ModelAsset`. This asset type
-interprets the given data string is a file path and loads the whole Model.
+In the WasserXR-Core plugin, there is a `ModelAsset`. This asset type interprets
+the given data string as a file path and loads the model.
 
-Other systems can after loading a Model read the model data, like their
-vertices.
+Other systems can then read the loaded model data, such as its vertices.
 
 </Aside>
 
@@ -31,22 +32,25 @@ vertices.
 <Tabs syncKey="lang">
 <TabItem label="Rust">
 
-Using a asset is quite simple and works almost the same as a
-[component](/getting_started/ecs/components)
+Using an asset is similar to using a [component](/getting_started/ecs/components).
 
-There are mainly two steps. First, you need to ensure that the asset is properly
-loaded and then you can query data from it.
+There are two steps. First, ensure that the asset is loaded. Then query data
+from it.
 
 ```rust
+let asset_type = "MyAsset";
+let data_string = "assets/example.asset";
+
 let res: Result<(), SceneError> = scene.ensure_asset_loaded(asset_type, data_string);
-let res: Result<(&usize,), SceneError> = scene.asset_query_loaded::<(&usize,)>(asset_type, data_string, &["my_field"]);
+let res: Result<(&usize,), SceneError> =
+  scene.asset_query_loaded::<(&usize,)>(asset_type, data_string, &["my_field"]);
 ```
 
-When you need a shorthand for both of these operations together, you can also
-run
+When you need a shorthand for both operations together, you can run:
 
 ```rust
-let res: Result<(&usize,), SceneError> = scene.asset_query::<(&usize,)>(asset_type, data_string, &["my_field"]);
+let res: Result<(&usize,), SceneError> =
+  scene.asset_query::<(&usize,)>(asset_type, data_string, &["my_field"]);
 ```
 
 </TabItem>
@@ -54,17 +58,18 @@ let res: Result<(&usize,), SceneError> = scene.asset_query::<(&usize,)>(asset_ty
 
 <Aside type="caution" title="Reloading" icon="warning">
 
-A hotreload will invalidate the asset cache and they will be reinitialized.
+A hot-reload clears the asset cache. Assets will be recreated when they are
+loaded again.
 
 </Aside>
 
-## Creating your own Asset Type
+## Creating Your Own Asset Type
 
 <Tabs syncKey="lang">
 <TabItem label="Rust">
 
-Creating your own asset type, works also pretty much the same as building your
-own [component](/getting_started/ecs/components).
+Creating your own asset type works similarly to building your own
+[component](/getting_started/ecs/components).
 
 ```rust
 #[asset_type]
@@ -73,12 +78,13 @@ struct MyAsset {
 }
 
 #[asset_type_creator(MyAsset)]
-fn create_my_asset(scene: &mut Scene, data_string: &str) -> Option<MyAsset> {
+fn create_my_asset(_scene: &mut Scene, data_string: &str) -> Option<MyAsset> {
   ...
 }
 ```
 
-You can also use the `#[none]` field attribute to make a field not queryable.
+Every named field is queryable by default. You can use the `#[none]` field
+attribute to hide a field from asset queries.
 
 </TabItem>
 </Tabs>

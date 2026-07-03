@@ -7,23 +7,23 @@ sidebar:
 
 import { Aside, Tabs, TabItem } from "@astrojs/starlight/components";
 
-The scene is the main object in WasserXR. It is the **runtime** for the whole
-ECS. It manages lifetimes of all plugins, assets, resources, entities,
-components and systems.
+The `Scene` is the main object in WasserXR. It is the **runtime** for the whole
+ECS. It manages the lifetimes of plugins, assets, resources, entities,
+components, and systems.
 
 ## Using the Scene
 
 <Tabs syncKey="lang">
 <TabItem label="Rust">
 
-To create a scene in rust, you can simple call
+To create a scene in Rust, call:
 
 ```rust
 let mut scene = Scene::new();
 ```
 
 After creating a scene and loading all the
-[plugins](/getting_started/ecs/plugins) you can let the scene tick by running
+[plugins](/getting_started/ecs/plugins), you can let the scene tick by running:
 
 ```rust
 while scene.tick() {}
@@ -33,3 +33,53 @@ This will run all the active systems in the scene.
 
 </TabItem>
 </Tabs>
+
+## What the Scene Owns
+
+The scene owns the ECS state you work with in the rest of this guide:
+
+- [entities](/getting_started/ecs/entities)
+- [components](/getting_started/ecs/components)
+- [systems](/getting_started/ecs/systems)
+- [plugins](/getting_started/ecs/plugins)
+- [assets](/getting_started/ecs/assets)
+- [resources](/getting_started/ecs/resources)
+
+Most WasserXR operations go through the scene. For example, you add entities,
+attach components, load plugins, and run systems through `Scene` methods.
+
+## Saving and Loading
+
+<Tabs syncKey="lang">
+<TabItem label="Rust">
+
+You can save and load the serializable part of a scene:
+
+```rust
+let _ = scene.save("my_scene.wxr");
+let _ = scene.load("my_scene.wxr");
+```
+
+</TabItem>
+</Tabs>
+
+Saving stores entities, components, and systems. It does not store loaded plugin
+handles, cached assets, or resources. Load the needed plugins before loading a
+scene that uses their components or systems.
+
+## Resetting
+
+<Tabs syncKey="lang">
+<TabItem label="Rust">
+
+You can remove the current runtime state with:
+
+```rust
+let _ = scene.reset();
+```
+
+</TabItem>
+</Tabs>
+
+Reset removes assets, entities, components, and systems. Loaded plugins and
+resources stay registered.
