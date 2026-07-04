@@ -1,0 +1,36 @@
+---
+title: window_input_read
+description: How to use the window_input_read
+sidebar:
+  order: 2
+---
+
+import { Aside, Tabs, TabItem } from "@astrojs/starlight/components";
+
+| Type                 | System                                                         |
+| -------------------- | -------------------------------------------------------------- |
+| Name                 | `window_input_read`                                            |
+| Recommended Priority | `1000`                                                         |
+| Query groups         | `0`                                                            |
+| Entities             | `None`                                                         |
+| Purpose              | Reads all the Winit input events (all the window input events) |
+
+## Function
+
+This system is responsible to poll all the window events from the windows
+created with winit (for example the window created by the
+[renderer](/wasserxr-core/systems/renderer)).
+
+It writes all the `glium::winit::event::WindowEvent` into the
+[resource](/getting_started/ecs/resource) `window_events` which is a
+`Vec<glium::winit::event::WindowEvent>` (Rust)
+
+<Aside type="caution" title="Usage with `window_input_reset" icon="warning">
+
+This system should only be used in combination with the
+[window_input_reset](/wasserxr-core/systems/window_input_reset) system as this
+will clear all the array at the end of a tick.
+
+Hence it should also have a **lower priority** than `window_input_read`.
+
+</Aside>
