@@ -7,81 +7,59 @@ sidebar:
 
 import { Aside, Tabs, TabItem } from "@astrojs/starlight/components";
 
-The logging system is a system (**not an ECS system**) directly built into the
-`wasserxr_ecs` library.
-
-It should help the user get important information about the
-[ECS](/getting_started/ecs/why-ecs) and also about maybe problems that occur in a
-[system](/getting_started/ecs/systems)/[component](/getting_started/ecs/components).
+WasserXR implements it's own logging system.
 
 ## Usage
 
 <Tabs syncKey="lang">
-<TabItem label="C">
+<TabItem label="Rust">
 
-To initialize the logging you can do the following
+After creating a scene, the logging system has automatically been initialized
+and you can start logging using the following macros
 
-```c
-#include "WasserXR/ecs/logging.h"
-
-int main() {
-  // Create logging
-  wxr_logging_init(WXR_LOG_DEBUG);
-  wxr_add_logger(wxr_stdout_logger);
-
-  wxr_info("Logging Initialized!");
-}
+```rust
+debug!(scene, "My Log: {}", my_variable_to_format);
+info!(scene, "My Log: {}", my_variable_to_format);
+warn!(scene, "My Log: {}", my_variable_to_format);
+error!(scene, "My Log: {}", my_variable_to_format);
 ```
-
-You can use the following methods to send a logging message.
-
-```c
-wxr_debug(...)
-wxr_info(...)
-wxr_warn(...)
-wxr_error(...)
-wxr_critical(...)
-```
-
-<Aside type="caution" title="Critical Level" icon="warning">
-
-The critical logging level should only be used for unrecoverable crashes. It
-will also directly exit the application afterwards.
-
-</Aside>
-
-<Aside type="note" title="Formatting" icon="information">
-
-You can also use the same syntax like for `printf` with the functions to format
-values into the string.
-
-For example
-
-```c
-int x = 5;
-
-wxr_debug("Value of x: %d", x);
-```
-
-</Aside>
 
 </TabItem>
 </Tabs>
 
-## Asserts
+## Accessing the Log Ring
 
 <Tabs syncKey="lang">
-<TabItem label="C">
+<TabItem label="Rust">
 
-The logging system also provides integrated assert statements.
+To access the whole log ring, you can call
 
-```c
-int x = 1;
+```rust
+for entry in scene.iter_log() {
+  ...
+}
+```
 
-wxr_assert(x == 1, "x is not 1. It is %d", x); # Triggers a critical log and quits the application
-wxr_assert_recoverable(x == 1, "x is not 1. It is %d", x); # Triggers an error log but doesn't fail the application
-wxr_assert_abort(x == 1, "x is not 1. It is %d", x); # Triggers an error log and calls a `return;` statement to end the current function
-wxr_assert_abort(x == 1, -1, "x is not 1. It is %d", x); # Triggers an error log and calls a `return -1;` statement to end the current function
+</TabItem>
+</Tabs>
+
+## Callback Log Handler
+
+There are log handler functions that will run every time a new log entry is
+added to the log ring.
+
+There are the following default log handlers already implemented in WasserXR:
+
+- `print_logger` (Prints the logging output to the stdout (to the terminal))
+- `file_logger` (Appends to the file `log.log`)
+
+<Tabs syncKey="lang">
+<TabItem label="Rust">
+
+You can register these log handlers by running
+
+```rust
+scene.register_callback_logger(file_logger)
 ```
 
 </TabItem>
@@ -90,50 +68,18 @@ wxr_assert_abort(x == 1, -1, "x is not 1. It is %d", x); # Triggers an error log
 ## Custom Log Handler
 
 <Tabs syncKey="lang">
-<TabItem label="C">
+<TabItem label="Rust">
 
-You can use your custom log handler. You need to define some kind of function
-with the following signature
+You can easily implement your own log handler. A log handler is just a function
+that takes a reference to a `&LogEntry`.
 
-```c
-void wxr_my_logger(WXR_Log_Entry entry);
+For example the `print_logger` is implemented like this
+
+```rust
+pub fn print_logger(entry: &LogEntry) {
+    println!("{}", entry);
+}
 ```
-
-The `WXR_Log_Entry` struct looks like this
-
-```c
-typedef struct {
-  WXR_Log_Level level;
-  char *msg;
-} WXR_Log_Entry;
-```
-
-The `WXR_Log_Level` are an enum that looks like this
-
-```c
-typedef enum {
-  WXR_LOG_DEBUG,
-  WXR_LOG_INFO,
-  WXR_LOG_WARN,
-  WXR_LOG_ERROR,
-  WXR_LOG_CRITICAL,
-} WXR_Log_Level;
-```
-
-<Aside type="note" title="Ownership" icon="information">
-
-The message in the WXR_Log_Entry is not owned by the logger. You shouldn't free
-it.
-
-</Aside>
-
-To register your logger, you can do the following
-
-```c
-wxr_add_logger(wxr_my_logger);
-```
-
-where you pass in the function pointer.
 
 </TabItem>
 </Tabs>
