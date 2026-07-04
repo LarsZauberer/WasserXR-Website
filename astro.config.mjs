@@ -11,14 +11,6 @@ export default defineConfig({
 			social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/LarsZauberer/WasserXR' }, {icon: "discord", label: "Discord", href: "https://discord.gg/XcjBZn5pHy"}],
 			sidebar: [
 				{
-					label: 'Blog',
-					items: [
-						{ slug: 'blog' },
-						{ slug: 'blog/rewriting-wasserxr-in-rust' },
-						{ slug: 'blog/welcome' },
-					],
-				},
-				{
 					label: 'Getting Started',
 					items: [
 						{ slug: 'getting_started/setup' },
