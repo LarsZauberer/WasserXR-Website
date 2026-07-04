@@ -33,7 +33,8 @@ export default defineConfig({
           label: 'WasserXR-Core',
           items: [
             {label: 'Components', autogenerate: {directory: 'wasserxr-core/components'}},
-            {label: 'Systems', autogenerate: {directory: 'wasserxr-core/systems'}}
+            {label: 'Systems', autogenerate: {directory: 'wasserxr-core/systems'}},
+            {label: 'Asset Types', autogenerate: {directory: 'wasserxr-core/assets'}}
           ]
         }
 			],

@@ -1,0 +1,53 @@
+---
+title: ShaderAsset
+description: Shader Asset Type
+sidebar:
+  order: 0
+---
+
+import { Aside, Tabs, TabItem } from "@astrojs/starlight/components";
+
+| Type    | Asset Type                                                   |
+| ------- | ------------------------------------------------------------ |
+| Name    | `ShaderAsset`                                                |
+| Purpose | Loads GLSL shaders and compile it to a OpenGL Shader Program |
+
+## Fields
+
+| Field    | Type                      | Accessible |
+| -------- | ------------------------- | ---------- |
+| `shader` | `glium::program::Program` | YES        |
+
+## Usage
+
+The asset takes as a data string a path to two GLSL shader files. Namely the
+vertex and the fragment shader. The path will point to the files without their
+corresponding file extension.
+
+<Aside type="note" title="Example: Path" icon="list-format">
+
+If you have the following GLSL shader files:
+
+- `./shaders/base.vert`
+- `./shaders/base.frag`
+
+then a valid data string would be **`./shaders/base`**.
+
+</Aside>
+
+<Aside type="caution" title="File extension" icon="warning">
+
+The GLSL shader files need to be correctly named. The vertex shader needs to
+have the `.vert` file extension and the fragment shader needs the `.frag` file
+extension.
+
+</Aside>
+
+## Failures
+
+The creation of such a asset can fail because of one of the following reasons
+
+- The files couldn't be found
+- The files couldn't be read
+- The shaders couldn't be compiled
+- The shaders couldn't be linked together

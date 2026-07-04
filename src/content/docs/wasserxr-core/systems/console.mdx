@@ -15,11 +15,16 @@ import { Aside, Tabs, TabItem } from "@astrojs/starlight/components";
 | Entities             | None                               |
 | Purpose              | Runtime ECS inspection and editing |
 
+## Function
+
 The console is one of the fundamental parts of the WasserXR-Core library. It is
 the primary way of exposing the ECS API to the user at runtime.
 
 The console is a system built with [Ratatui](https://ratatui.rs/) that provides
 a TUI interface to interact with the ECS API.
+
+The system is the rendering tick function for the TUI. It renders the graphic to
+the user terminal.
 
 ## Usage
 

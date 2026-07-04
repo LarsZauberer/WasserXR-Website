@@ -1,0 +1,35 @@
+---
+title: ModelAsset
+description: Model Asset Type
+sidebar:
+  order: 1
+---
+
+import { Aside, Tabs, TabItem } from "@astrojs/starlight/components";
+
+| Type    | Asset Type                                                       |
+| ------- | ---------------------------------------------------------------- |
+| Name    | `ModelAsset`                                                     |
+| Purpose | Loads a 3D Model file into the correct OpenGL Buffers on the GPU |
+
+## Fields
+
+| Field    | Type        | Accessible |
+| -------- | ----------- | ---------- |
+| `meshes` | `Vec<Mesh>` | YES        |
+
+## Usage
+
+The data string for the asset is just the path to some 3D Model file like
+`.obj`, `.fbx`, ...
+
+It uses internally [Asset Importer](https://assimp.org/). Hence it will support
+all the files that it supports.
+
+## Failures
+
+The asset creation can fail if
+
+- The file cannot be found or read
+- The file is not proper 3D Model that [Asset Importer](https://assimp.org/) can
+  use.
