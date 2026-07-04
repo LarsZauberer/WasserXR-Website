@@ -7,7 +7,7 @@ sidebar:
 
 import { Aside, Tabs, TabItem } from "@astrojs/starlight/components";
 
-WasserXR implements it's own logging system.
+WasserXR implements its own logging system.
 
 ## Usage
 
@@ -35,7 +35,7 @@ error!(scene, "My Log: {}", my_variable_to_format);
 To access the whole log ring, you can call
 
 ```rust
-for entry in scene.iter_log() {
+for entry in scene.iter_logs() {
   ...
 }
 ```

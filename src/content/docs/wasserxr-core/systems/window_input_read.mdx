@@ -22,14 +22,14 @@ created with winit (for example the window created by the
 [renderer](/wasserxr-core/systems/renderer)).
 
 It writes all the `glium::winit::event::WindowEvent` into the
-[resource](/getting_started/ecs/resource) `window_events` which is a
+[resource](/getting_started/ecs/resources) `window_events` which is a
 `Vec<glium::winit::event::WindowEvent>` (Rust)
 
-<Aside type="caution" title="Usage with `window_input_reset" icon="warning">
+<Aside type="caution" title="Usage with `window_input_reset`" icon="warning">
 
 This system should only be used in combination with the
 [window_input_reset](/wasserxr-core/systems/window_input_reset) system as this
-will clear all the array at the end of a tick.
+will clear the array at the end of a tick.
 
 Hence it should also have a **lower priority** than `window_input_read`.
 
