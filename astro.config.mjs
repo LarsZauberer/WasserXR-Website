@@ -8,7 +8,7 @@ export default defineConfig({
 		starlight({
 			title: 'WasserXR',
 			customCss: ['./src/styles/custom.css'],
-			social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/LarsZauberer/TheSeed' }, {icon: "discord", label: "Discord", href: "https://discord.gg/XcjBZn5pHy"}],
+			social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/LarsZauberer/WasserXR' }, {icon: "discord", label: "Discord", href: "https://discord.gg/XcjBZn5pHy"}],
 			sidebar: [
 				{
 					label: 'Blog',
