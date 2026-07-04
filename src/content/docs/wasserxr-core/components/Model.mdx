@@ -1,0 +1,20 @@
+---
+title: Model
+description: Model Component
+sidebar:
+  order: 2
+---
+
+import { Aside, Tabs, TabItem } from "@astrojs/starlight/components";
+
+| Type    | Component                                                                           |
+| ------- | ----------------------------------------------------------------------------------- |
+| Name    | `Model`                                                                             |
+| Purpose | Specifies the `ModelAsset` and the `MaterialAsset` to use when rendering the Entity |
+
+## Fields
+
+| Field      | Type            | Default                   | Description                                                                          | Virtual | Accessible | Mutable | Serializable | Deserializable |
+| ---------- | --------------- | ------------------------- | ------------------------------------------------------------------------------------ | ------- | ---------- | ------- | ------------ | -------------- |
+| `model`    | `String` (Rust) | `""`                      | The path to the 3D Model file ([ModelAsset](/wasserxr-core/assets/ModelAsset))       | NO      | YES        | YES     | YES          | YES            |
+| `material` | `String` (Rust) | `"./materials/base.json"` | The path to the material file ([MaterialAsset](/wasserxr-core/assets/MaterialAsset)) | NO      | YES        | YES     | YES          | YES            |
