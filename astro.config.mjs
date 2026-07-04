@@ -26,10 +26,16 @@ export default defineConfig({
 							label: 'ECS',
 							autogenerate: { directory: 'getting_started/ECS' },
 						},
-						{ slug: 'getting_started/console' },
 						{ slug: 'getting_started/logging' },
 					],
 				},
+        {
+          label: 'WasserXR-Core',
+          items: [
+            {label: 'Components', autogenerate: {directory: 'wasserxr-core/components'}},
+            {label: 'Systems', autogenerate: {directory: 'wasserxr-core/systems'}}
+          ]
+        }
 			],
 		}),
 	],
