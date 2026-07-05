@@ -1,0 +1,45 @@
+---
+title: MaterialAsset
+description: Material Asset Type
+sidebar:
+  order: 2
+---
+
+import { Aside, Tabs, TabItem } from "@astrojs/starlight/components";
+
+| Type    | Asset Type                                         |
+| ------- | -------------------------------------------------- |
+| Name    | `MaterialAsset`                                    |
+| Purpose | Describes additional data that a shader might need |
+
+## Fields
+
+| Field    | Type                                   | Description                                                              | Accessible |
+| -------- | -------------------------------------- | ------------------------------------------------------------------------ | ---------- |
+| `shader` | `String` (Rust)                        | The data string for the [ShaderAsset](/wasserxr-core/assets/ShaderAsset) | YES        |
+| `data`   | `HashMap<String, MaterialData>` (Rust) | Holding all the uniforms for the shader                                  | YES        |
+
+## Usage
+
+The data string is the path to a **JSON** file that defines the material.
+
+The JSON looks generally like this
+
+```json
+{
+  "shader": "./shaders/base",
+  "uniform1": 0.5,
+  "uniform2": 3,
+  "uniform3": [0.3, 0.2, 0.1, 0.4],
+  "uniform4": [0.3, 0.2, 0.1],
+  "uniform5": [0.3, 0.2]
+}
+```
+
+## Failures
+
+The asset creation can fail for the following reasons
+
+- The file couldn't be found or read
+- The file is not valid JSON
+- The data provided in the JSON cannot be used in a GLSL uniform

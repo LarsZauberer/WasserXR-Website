@@ -1,0 +1,21 @@
+---
+title: Transform
+description: Transform Component
+sidebar:
+  order: 0
+---
+
+import { Aside, Tabs, TabItem } from "@astrojs/starlight/components";
+
+| Type    | Component                                           |
+| ------- | --------------------------------------------------- |
+| Name    | `Transform`                                         |
+| Purpose | Providing location, rotation and scale to an entity |
+
+## Fields
+
+| Field      | Type       | Default           | Description            | Virtual | Accessible | Mutable | Serializable | Deserializable |
+| ---------- | ---------- | ----------------- | ---------------------- | ------- | ---------- | ------- | ------------ | -------------- |
+| `position` | `[f32; 3]` | `[0.0, 0.0, 0.0]` | Position of the Entity | NO      | YES        | YES     | YES          | YES            |
+| `rotation` | `[f32; 3]` | `[0.0, 0.0, 0.0]` | Rotation of the Entity | NO      | YES        | YES     | YES          | YES            |
+| `scale`    | `[f32; 3]` | `[1.0, 1.0, 1.0]` | Scale of the Entity    | NO      | YES        | YES     | YES          | YES            |

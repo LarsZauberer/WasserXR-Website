@@ -1,0 +1,53 @@
+---
+title: console
+description: How to use the console
+sidebar:
+  order: 0
+---
+
+import { Aside, Tabs, TabItem } from "@astrojs/starlight/components";
+
+| Type                 | System                             |
+| -------------------- | ---------------------------------- |
+| Name                 | `console`                          |
+| Recommended Priority | `100`                              |
+| Query groups         | `0`                                |
+| Entities             | None                               |
+| Purpose              | Runtime ECS inspection and editing |
+
+## Function
+
+The console is one of the fundamental parts of the WasserXR-Core library. It is
+the primary way of exposing the ECS API to the user at runtime.
+
+The console is a system built with [Ratatui](https://ratatui.rs/) that provides
+a TUI interface to interact with the ECS API.
+
+The system is the rendering tick function for the TUI. It renders the graphic to
+the user terminal.
+
+## Usage
+
+The console is a TUI application, meaning that you will control everything via
+keybinds.
+
+At the bottom of the screen, you have hints showing you how to control the
+console.
+
+The console has 4 main tabs
+
+- Entities
+- Plugins
+- Systems
+- Logs
+
+In the "entities" tab, you can control all entities and their respective
+components. When inspecting an entity, you can further inspect a component and
+change the mutable fields.
+
+In the "plugins" tab, you can load and unload plugins however you would like.
+
+In the "systems" tab, you can activate and deactivate systems
+
+In the "logs" tab, you can inspect the logs WasserXR is showing you. You can
+filter by using the arrow keys between the different log levels.

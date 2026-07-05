@@ -1,0 +1,90 @@
+---
+title: Assets
+description: Assets and Asset Types in the ECS
+sidebar:
+  order: 6
+---
+
+import { Aside, Tabs, TabItem } from "@astrojs/starlight/components";
+
+Assets are also not necessarily a standard ECS object. In WasserXR, assets are
+similar to [components](/getting_started/ecs/components), but they have some
+important differences.
+
+An asset is a global cached object. It is created from an asset type and a data
+string. The asset type defines how to construct the asset, and the data string
+identifies the concrete asset to load.
+
+Use assets for shared data that can be loaded once and read by many entities,
+such as models, textures, shaders, or level data.
+
+<Aside type="note" title="Example: Model" icon="open-book">
+
+In the WasserXR-Core plugin, there is a `ModelAsset`. This asset type interprets
+the given data string as a file path and loads the model.
+
+Other systems can then read the loaded model data, such as its vertices.
+
+</Aside>
+
+## Usage
+
+<Tabs syncKey="lang">
+<TabItem label="Rust">
+
+Using an asset is similar to using a [component](/getting_started/ecs/components).
+
+There are two steps. First, ensure that the asset is loaded. Then query data
+from it.
+
+```rust
+let asset_type = "MyAsset";
+let data_string = "assets/example.asset";
+
+let res: Result<(), SceneError> = scene.ensure_asset_loaded(asset_type, data_string);
+let res: Result<(&usize,), SceneError> =
+  scene.asset_query_loaded::<(&usize,)>(asset_type, data_string, &["my_field"]);
+```
+
+When you need a shorthand for both operations together, you can run:
+
+```rust
+let res: Result<(&usize,), SceneError> =
+  scene.asset_query::<(&usize,)>(asset_type, data_string, &["my_field"]);
+```
+
+</TabItem>
+</Tabs>
+
+<Aside type="caution" title="Reloading" icon="warning">
+
+A hot-reload clears the asset cache. Assets will be recreated when they are
+loaded again.
+
+</Aside>
+
+## Creating Your Own Asset Type
+
+<Tabs syncKey="lang">
+<TabItem label="Rust">
+
+Creating your own asset type works similarly to building your own
+[component](/getting_started/ecs/components).
+
+```rust
+#[asset_type]
+struct MyAsset {
+  ...
+}
+
+#[asset_type_creator(MyAsset)]
+fn create_my_asset(_scene: &mut Scene, data_string: &str) -> Option<MyAsset> {
+  ...
+}
+```
+
+Every named field is queryable by default. You can use the `#[none]` field
+attribute to hide a field from asset queries.
+
+</TabItem>
+</Tabs>

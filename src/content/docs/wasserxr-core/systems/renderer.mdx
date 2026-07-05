@@ -1,0 +1,28 @@
+---
+title: renderer
+description: How to use the renderer
+sidebar:
+  order: 1
+---
+
+import { Aside, Tabs, TabItem } from "@astrojs/starlight/components";
+
+| Type                 | System                    |
+| -------------------- | ------------------------- |
+| Name                 | `renderer`                |
+| Recommended Priority | `100`                     |
+| Query groups         | `2`                       |
+| Entities             | `[["Camera"], ["Model"]]` |
+| Purpose              | Renders all the objects   |
+
+## Function
+
+The renderer is the main tick function of the OpenGL rendering system. It will
+render a single frame.
+
+Furthermore, if there doesn't exist an OpenGL context and Window, it will create
+the following [resources](/getting_started/ecs/resources):
+
+- `render_window` (Type:
+  `(glium::winit::Window, glium::backend::glutin::Display<glium::glutin::surface::WindowSurface>)`
+  (Rust))

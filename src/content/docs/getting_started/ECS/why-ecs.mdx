@@ -2,58 +2,87 @@
 title: Why ECS
 description: Understanding the Entity Component System architecture
 sidebar:
-  order: 1
+  order: 0
 ---
 
-import { Aside } from '@astrojs/starlight/components';
+import { Aside } from "@astrojs/starlight/components";
 
-The ECS is the core part of WasserXR and therefore it is crucial to understand how it works and how to use it correctly.
+The ECS is the core part of WasserXR and therefore it is crucial to understand
+how it works and how to use it correctly.
 
 ## What is an ECS?
 
-ECS stands for *Entity Component System*. It's a design pattern that organizes your game or application around three core concepts:
+ECS stands for _Entity Component System_. It's a design pattern that organizes
+your game or application around three core concepts:
 
-- **Entities** are containers that represent "things" in your world (a player, a rock, a light source)
-- **Components** are pure data containers that get attached to entities (position, velocity, health, color)
-- **Systems** are the logic that operates on entities with specific components (physics, rendering, AI)
+- **Entities** are containers that represent "things" in your world (a player, a
+  rock, a light source)
+- **Components** are pure data containers that get attached to entities
+  (position, velocity, health, color)
+- **Systems** are the logic that operates on entities with specific components
+  (physics, rendering, AI)
 
-Instead of having complex object hierarchies, ECS separates *what things are* (data in components) from *what things do* (logic in systems). This makes your code modular, flexible, and easy to reason about.
+Instead of having complex object hierarchies, ECS separates _what things are_
+(data in components) from _what things do_ (logic in systems). This makes your
+code modular, flexible, and easy to reason about.
 
 Let's walk through a simple example:
 
 <Aside type="note" title="Example: Gravity System" icon="open-book">
-Imagine you have a `Gravity` system and a `Position` component that stores the x, y, z coordinates of entities.
+
+Imagine you have a `Gravity` system and a `Position` component that stores the
+x, y, z coordinates of entities.
 
 You create several entities:
+
 - Entity 1 has `Position` and `Velocity` components
-- Entity 2 has only a `Position` component  
+- Entity 2 has only a `Position` component
 - Entity 3 has `Color` and `Name` components, but no `Position`
 
-Every game tick, the `Gravity` system queries for all entities that have a `Position` component. It finds Entity 1 and Entity 2, then modifies their positions to simulate gravity. Entity 3 is ignored because it doesn't have the required component.
+Every game tick, the `Gravity` system queries for all entities that have a
+`Position` component. It finds Entity 1 and Entity 2, then modifies their
+positions to simulate gravity. Entity 3 is ignored because it doesn't have the
+required component.
+
 </Aside>
 
 ## The Problem with Traditional Inheritance
 
-Traditional object-oriented programming often uses deep inheritance trees. You might have `GameObject → Character → Player → SpecialPlayer`, and suddenly you want your player to fly like an enemy does. Do you create a `FlyingCharacter` base class? What if something needs to be both flying and swimming? This is the classic "diamond problem" in inheritance.
+Traditional object-oriented programming often uses deep inheritance trees. You
+might have `GameObject → Character → Player → SpecialPlayer`, and suddenly you
+want your player to fly like an enemy does. Do you create a `FlyingCharacter`
+base class? What if something needs to be both flying and swimming? This is the
+classic "diamond problem" in inheritance.
 
-As your project grows, these rigid hierarchies become harder to maintain. Adding new behaviors means carefully navigating inheritance chains, and changing one parent class can break dozens of children.
+As your project grows, these rigid hierarchies become harder to maintain. Adding
+new behaviors means carefully navigating inheritance chains, and changing one
+parent class can break dozens of children.
 
 ## Why Composition is Better
 
-ECS uses *composition* instead of inheritance. Rather than defining what something *is* through class hierarchies, you define what something *has* through components.
+ECS uses _composition_ instead of inheritance. Rather than defining what
+something _is_ through class hierarchies, you define what something _has_
+through components.
 
-Want a flying enemy? Add a `Position` component, a `Velocity` component, and a `Flying` component. Want it to also be on fire? Just add a `Fire` component. This requires no inheritance. You are freely mixing and matching data to create exactly the behavior you need.
+Want a flying enemy? Add a `Position` component, a `Velocity` component, and a
+`Flying` component. Want it to also be on fire? Just add a `Fire` component.
+This requires no inheritance. You are freely mixing and matching data to create
+exactly the behavior you need.
 
-This is often called "trait-based" or "composition-based" design, and it's far more flexible than traditional inheritance.
+This is often called "trait-based" or "composition-based" design, and it's far
+more flexible than traditional inheritance.
 
 ## Hot-Reloading: The Developer Experience Advantage
 
-One of the most powerful aspects of ECS is how naturally it supports hot-reloading. Because components and systems are modular by design, they can be treated as plugins that load and unload independently.
+One of the most powerful aspects of ECS is how naturally it supports
+hot-reloading. Because components and systems are modular by design, they can be
+treated as plugins that load and unload independently.
 
-WasserXR's plugin system takes advantage of this architecture. Since systems and components aren't tangled up in inheritance hierarchies, you can recompile them while the engine is running and hot-reload the changes instantly. No restart required.
+WasserXR's plugin system takes advantage of this architecture. Since systems and
+components aren't tangled up in inheritance hierarchies, you can recompile them
+while the engine is running and hot-reload the changes instantly. No restart
+required.
 
-This means you can tweak game logic, adjust physics parameters, or modify rendering code and see the results immediately. This helps you stay in the flow of development rather than constantly waiting for rebuilds and restarts.
-
-## Next Steps
-
-Now that you understand the ECS concept, you're ready to start building with WasserXR. Check out the examples and API documentation to see how to create your own components and systems.
+This means you can tweak game logic, adjust physics parameters, or modify
+rendering code and see the results immediately. This helps you stay in the flow
+of development rather than constantly waiting for rebuilds and restarts.

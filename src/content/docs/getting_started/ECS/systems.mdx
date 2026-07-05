@@ -9,314 +9,116 @@ import { Aside, Tabs, TabItem } from "@astrojs/starlight/components";
 
 Systems are where the logic lives in ECS. While
 [components](/getting_started/ecs/components) hold data, systems process that
-data and make things happen. A system runs every frame, finds
+data and make things happen. A system runs every scene tick, finds
 [entities](/getting_started/ecs/entities) with specific
 [components](/getting_started/ecs/components), and performs operations on them.
 
 ## Creating Your First System
 
-Let's create a simple gravity system that pulls entities downward. We'll start
-simple and build up complexity.
-
-<Aside type="caution" title="Function Naming Requirement" icon="warning">
-
-As for the [components](/getting_started/ecs/components) system functions
-**must** use the correct name prefix for the ECS system to recognize it as a
-correct system: `wxr_system_<name>`, `wxr_select_<name>`, `wxr_groups_<name>`,
-etc.
-
-When using other languages like C++, Rust, ... you might need to disable
-[name mangling](https://en.wikipedia.org/wiki/Name_mangling) so that the
-compiler doesn't rename the functions in the
-
-</Aside>
-
-### Step 1: Set the groups for the system
-
-This is a bit special. You need to provide the system with some information
-about how many different types of [entities](/getting_started/ecs/entities) it
-cares about.
-
-<Aside type="note" title="Example" icon="list-format">
-
-Let's consider the `wxr_mesh_renderer` system that should render all the 3D
-Models. It cares about all the [entities](/getting_started/ecs/entities) that
-need to be rendered. It also cares about the camera
-[entity](/getting_started/ecs/entities) and the window
-[entity](/getting_started/ecs/entities). These are 3 categories of different
-[entities](/getting_started/ecs/entities). Hence you would say you have `3`
-groups.
-
-</Aside>
-
-In most simple cases you will probably have only one group.
-
 <Tabs syncKey="lang">
-<TabItem label="C">
+<TabItem label="Rust">
 
-To set the group variable for the system you define the **global variable** like
-this
+You can build your first system by defining the main system function:
 
-```c
-WXR_System_Groups wxr_groups_gravity = 1;
-```
+```rust
+#[system(entities = [["Health"]])]
+fn health_drain(scene: &mut Scene, entities: Vec<Vec<Uuid>>) {
+  for entity in &entities[0] {
+    let Ok((health,)) =
+      scene.query_mut::<(&mut usize,)>(*entity, "Health", &["current_health"])
+    else {
+      continue;
+    };
 
-</TabItem>
-</Tabs>
-
-<Aside type="note" title="Groups are optional" icon="information">
-
-If your system doesn't care about any [entities](/getting_started/ecs/entities)
-you also don't need to define the groups. The groups will then default to `0`.
-So you are not able to query any [entities](/getting_started/ecs/entities).
-
-</Aside>
-
-### Step 2: Define the Selector Function
-
-The selector determines which [entities](/getting_started/ecs/entities) the
-system cares about. It returns a group number to which the
-[entity](/getting_started/ecs/entities) should belong. It can look something
-like this
-
-<Tabs syncKey="lang">
-<TabItem label="C">
-
-```c
-WXR_System_Groups wxr_select_gravity(const WXR_Scene *scene, const WXR_Entity entity) {
-    // Check if entity has the component we need
-    if (wxr_entity_get_component(scene, entity, "Transform")) {
-        return 0;  // Include this entity in group with index 0
-    }
-    return -1;  // Skip this entity
+    *health = health.saturating_sub(1);
+  }
 }
 ```
 
-Returning `-1` means "skip this entity." Any other number includes the
-[entity](/getting_started/ecs/entities) in that group. Groups are index by `0`.
+<Aside type="note" title="Name of the system" icon="information">
 
-<Aside type="note" title="Multiple queries" icon="information">
-
-It is also easily possible to query for multiple components like this
-
-```c
-size_t query = wxr_entity_get_component(scene, entity, "WXR_Transform") && wxr_entity_get_component(scene, entity, "WXR_Model");
-
-if (query) {
-  return 0;
-}
-return -1;
-```
+The name of the system is determined by the name of the system function. In this
+case, it is `"health_drain"`.
 
 </Aside>
 
-</TabItem>
-</Tabs>
-
-<Aside type="note" title="Optional Selector" icon="information">
-
-Defining a selector is **optional** but if you don't have any, also no
-[entities](/getting_started/ecs/entities) will be selected.
-
-</Aside>
-
-### Step 2: Define the System Function
-
-The system function is the main function of the system and is what is run on
-every frame.
-
-<Tabs syncKey="lang">
-<TabItem label="C">
-
-```c
-void wxr_system_gravity(WXR_Scene *scene, WXR_Entity **entities, const size_t *groups) {
-    // groups[0] contains the count of entities in group 0
-    for (size_t i = 0; i < groups[0]; i++) {
-        // Get this entity's ID
-        WXR_Entity entity = entities[0][i];
-
-        // Get the Transform component
-        void *transform = wxr_entity_get_component(scene, entity, "Transform");
-
-        // Apply gravity
-        float y = *(const float*) wxr_get(scene, transform, "y");
-        y -= 1.0F;
-        wxr_set(scene, transform, "y", &y);
-    }
-}
-```
-
-The parameters might look confusing at first:
-
-- `entities` is a 2D array: `entities[group_number][entity_index]`
-- `groups` is an array of sizes: `groups[group_number]` tells you how many
-  entities are in that group
-
-Since we are using only one group, we access `entities[0]` and `groups[0]`.
+This builds a system that receives all entities with a `Health` component in the
+first query group. We then get the
+`current_health` field from that component and decrement it by `1`, stopping at
+`0`.
 
 </TabItem>
 </Tabs>
 
 ## Creating and Destroying Systems
 
-You can easily add systems to your scene by using
-
 <Tabs syncKey="lang">
-<TabItem label="C">
+<TabItem label="Rust">
 
-```c
-int status = wxr_add_system(scene, "gravity", 100);
+To add or remove a system, use the following scene functions:
+
+```rust
+let _ = scene.add_system("health_drain".to_owned(), 100);
+let _ = scene.remove_system("health_drain");
 ```
 
-<Aside type="note" title="System Name" icon="information">
+The `100` is the priority of the system. The higher the priority of a system,
+the earlier it will be executed during a scene tick.
 
-Like with the [components](/getting_started/ecs/components), the name after the
-function prefix is the identifier of your system and is also used here to find
-your system inside of the [plugin](/getting_started/ecs/systems).
+</TabItem>
+</Tabs>
 
-</Aside>
-
-<Aside type="note" title="More than one system" icon="information">
+<Aside type="caution" title="More than one system" icon="warning">
 
 Like with [components](/getting_started/ecs/components), a system can only be
 instantiated once.
 
 </Aside>
 
-</TabItem>
-</Tabs>
+<Aside type="caution" title="Same priority" icon="warning">
 
-The number `100` is the priority. Lower numbers run earlier each frame. Now your
-system will run every tick!
+When two systems have the same priority, then there is no guarantee which system
+will run before the other.
 
-To remove a system from the scene you can run
-
-<Tabs syncKey="lang">
-<TabItem label="C">
-
-```c
-int status = wxr_remove_system(scene, "gravity");
-```
-
-</TabItem>
-</Tabs>
+</Aside>
 
 ## Attacher and Detacher
 
-Sometimes you need initialization or cleanup code that runs once when a system
-is added or removed. That's what attachers and detachers are for.
-
-### Implementing an Attacher
-
-The attacher runs once when you call `wxr_add_system()`:
+Sometimes you want to set up certain resources when the system is first attached
+and destroy them again when the system is removed. For that, you can build an
+attacher and a detacher.
 
 <Tabs syncKey="lang">
-<TabItem label="C">
+<TabItem label="Rust">
 
-```c
-void wxr_attach_render_system(WXR_Scene *scene) {
-    printf("Render system initializing...\n");
+```rust
+#[attacher(health_drain)]
+fn health_drain_attacher(_scene: &mut Scene) {
+  // Do something
+}
 
-    // Load shaders, initialize graphics state, etc.
-    load_shaders();
-    init_graphics();
-
-    printf("Render system ready!\n");
+#[detacher(health_drain)]
+fn health_drain_detacher(_scene: &mut Scene) {
+  // Do something
 }
 ```
 
 </TabItem>
 </Tabs>
 
-### Implementing a Detacher
-
-The detacher runs once when you call `wxr_remove_system()`:
+## Scene Ticking
 
 <Tabs syncKey="lang">
-<TabItem label="C">
+<TabItem label="Rust">
 
-```c
-void wxr_detach_render_system(WXR_Scene *scene) {
-    printf("Render system shutting down...\n");
+After initializing the `Scene`, your main program runs the main loop by calling
+`scene.tick()`. This runs all systems in priority order from highest to lowest.
 
-    // Unload resources, clean up state, etc.
-    unload_shaders();
-    cleanup_graphics();
+Normally, the function will return `true` if the `Scene` wants to continue
+ticking.
 
-    printf("Render system removed!\n");
-}
-```
-
-</TabItem>
-</Tabs>
-
-## Special Functions
-
-WasserXR provides special functions you can call from within systems to control
-the scene.
-
-### Requesting Scene Reload
-
-To trigger a hot-reload from within a system:
-
-<Tabs syncKey="lang">
-<TabItem label="C">
-
-```c
-void wxr_system_reload_checker(WXR_Scene *scene, WXR_Entity **entities, const size_t *groups) {
-    // Check if user pressed R key (you'd get this from input system)
-    if (reload_key_pressed) {
-        wxr_set_scene_reload(scene);
-    }
-}
-```
-
-</TabItem>
-</Tabs>
-
-This schedules a reload at the end of the current frame. All plugins will be
-reloaded, and you'll see your code changes instantly!
-
-<Aside type="caution" title="Don't Call wxr_reload() Directly" icon="warning">
-  Never call `wxr_reload()` from within a system. It would invalidate the return
-  address of your system function, causing a crash. Always use
-  `wxr_set_scene_reload()` instead, which safely schedules the reload for after
-  all systems finish.
-</Aside>
-
-### Requesting Scene Termination
-
-To signal that the application should quit:
-
-<Tabs syncKey="lang">
-<TabItem label="C">
-
-```c
-void wxr_system_quit_checker(WXR_Scene *scene, WXR_Entity **entities, const size_t *groups) {
-    // If no windows exist, quit
-    if (groups[0] == 0) {
-        wxr_set_scene_terminate(scene);
-    }
-}
-```
-
-</TabItem>
-</Tabs>
-
-Your main loop should check the return value of `wxr_tick_scene()`:
-
-<Tabs syncKey="lang">
-<TabItem label="C">
-
-```c
-while (wxr_tick_scene(scene)) {
-    // Systems ran normally
-}
-// Scene requested termination, clean up and exit
-```
-
-`wxr_tick_scene()` returns `1` for normal ticks and `0` when termination is
-requested.
+If something tells the scene to exit, then `scene.tick()` will return `false`.
+That signals to the main program that it should quit.
 
 </TabItem>
 </Tabs>

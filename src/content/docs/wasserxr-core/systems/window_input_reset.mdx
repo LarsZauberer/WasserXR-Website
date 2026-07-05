@@ -1,0 +1,33 @@
+---
+title: window_input_reset
+description: How to use the window_input_reset
+sidebar:
+  order: 3
+---
+
+import { Aside, Tabs, TabItem } from "@astrojs/starlight/components";
+
+| Type                 | System                            |
+| -------------------- | --------------------------------- |
+| Name                 | `window_input_reset`              |
+| Recommended Priority | `1`                               |
+| Query groups         | `0`                               |
+| Entities             | `None`                            |
+| Purpose              | Resets the Window Events Resource |
+
+## Function
+
+This system is responsible to clear all the window events in the `window_events`
+[resource](/getting_started/ecs/resources) that have been created before by the
+[window_input_read](/wasserxr-core/systems/window_input_read) system.
+
+The main reason this system exists is to make the `window_events`
+[resource](/getting_started/ecs/resources) not always grow infinitely large.
+
+<Aside type="caution" title="Priority" icon="warning">
+
+This system should definitely come after the
+[window_input_read](/wasserxr-core/systems/window_input_read) system and after
+every system that wants to read the window events.
+
+</Aside>

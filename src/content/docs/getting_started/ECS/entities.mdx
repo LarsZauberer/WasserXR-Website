@@ -7,35 +7,54 @@ sidebar:
 
 import { Aside, Tabs, TabItem } from "@astrojs/starlight/components";
 
-Entities are the simplest concept of an ECS. It is a container for
+Entities are the simplest concept in an ECS. An entity is an ID that groups
 [components](/getting_started/ecs/components). An entity that has no components
-has no meaning.
+has no behavior or data beyond its ID and name.
 
 <Aside type="note" title="Example" icon="list-format">
 
-For example, an entity can be your player. The player might have a transform,
-health, model, controller component. There might be other entities with
+For example, an entity can be your player. The player might have transform,
+health, model, and controller components. There might be other entities with
 different combinations of [components](/getting_started/ecs/components).
 
 </Aside>
 
-An entity is saved in the type `WXR_Entity`. This is the identifier to reference
-the entity that we might want to manipulate.
+An entity is represented by its
+[Uuid](https://en.wikipedia.org/wiki/Universally_unique_identifier) which is
+basically a 16-byte value.
+
+An entity also has a name. Names have no semantic meaning, but they help the
+developer distinguish between different entities.
 
 ## Creating Entities
 
 <Tabs syncKey="lang">
-<TabItem label="C">
+<TabItem label="Rust">
 
-To create a new entity, use `wxr_add_entity()`:
+To create an entity you can call
 
-```c
-WXR_Scene *scene = wxr_create_scene();
+```rust
+let entity: Uuid = scene.add_entity();
+```
 
-// Create some entities
-WXR_Entity player = wxr_add_entity(scene);
-WXR_Entity enemy = wxr_add_entity(scene);
-WXR_Entity camera = wxr_add_entity(scene);
+</TabItem>
+</Tabs>
+
+## Naming Entities
+
+<Tabs syncKey="lang">
+<TabItem label="Rust">
+
+You can name an entity by calling
+
+```rust
+scene.set_entity_name(entity_id, "My Entity".to_owned());
+```
+
+You can query the name again by calling
+
+```rust
+let name_res: Result<&str, SceneError> = scene.get_entity_name(entity_id);
 ```
 
 </TabItem>
@@ -44,41 +63,20 @@ WXR_Entity camera = wxr_add_entity(scene);
 ## Destroying Entities
 
 <Tabs syncKey="lang">
-<TabItem label="C">
+<TabItem label="Rust">
 
-```c
-WXR_Entity player = wxr_add_entity(scene);
-int result = wxr_remove_entity(scene, player);
+You can simply destroy an entity by calling
+
+```rust
+let _ = scene.remove_entity(entity_id);
 ```
-
-This removes the entity and **automatically destroys all its components**. The
-entity ID becomes invalid after removal.
 
 </TabItem>
 </Tabs>
 
-## Getting All Entities
+<Aside type="caution" title="Components on entities" icon="warning">
 
-<Tabs syncKey="lang">
-<TabItem label="C">
+When an entity is destroyed, it will automatically remove all the components
+associated with it.
 
-Sometimes you need to iterate over all entities in a scene:
-
-```c
-size_t count;
-WXR_Entity *entities = wxr_get_entities(&count, scene);
-
-printf("Scene has %zu entities\n", count);
-for (size_t i = 0; i < count; i++) {
-    printf("Entity: %zu\n", entities[i]);
-}
-
-free(entities);  // Remember to free!
-```
-
-<Aside type="note" title="Ownership" icon="information">
-  The array returned by `wxr_get_entities()` is owned by you and must be freed.
 </Aside>
-
-</TabItem>
-</Tabs>

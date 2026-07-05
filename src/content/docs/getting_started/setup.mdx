@@ -1,121 +1,68 @@
 ---
 title: Project Setup
-description: How to setup this project
+description: How to set up this project
 sidebar:
-  order: 1
+  order: 0
 ---
 
 import { Aside, Tabs, TabItem } from "@astrojs/starlight/components";
 
-This is the starting point on the guide how to get started with WasserXR. In the
-first part we will discuss how to setup your project to get something running.
+<Aside type="caution" title="Platform Support" icon="warning">
+
+WasserXR has only been tested on **Linux**. It has never been tested on Windows
+or macOS and will very likely not work on those platforms at the moment.
+
+</Aside>
+
+WasserXR consists of two parts: **WasserXR**, the foundational ECS, and
+**WasserXR-Core**, the standard library of
+[components](/getting_started/ecs/components),
+[systems](/getting_started/ecs/systems), and asset types.
 
 <Tabs syncKey="lang">
-<TabItem label="C">
+<TabItem label="Rust">
 
-Create a basic C project like you normally would. You can create a main
-executable with the following code.
+To build a Rust project with WasserXR, first initialize a Rust project with
 
-```c
-#include "WasserXR/ecs/logging.h"
-#include "WasserXR/ecs/utils.h"
-#include "WasserXR/ecs/Scene.h"
+```bash
+cargo init
+cargo add wasserxr
+```
 
-int main() {
-  // Create logging
-  wxr_logging_init(WXR_LOG_DEBUG);
-  wxr_add_logger(wxr_stdout_logger);
+In `main.rs`, add the following content:
 
-  wxr_info("Logging Initialized!");
+```rust
+use wasserxr::scene::{logging::file_logger, Scene};
 
-  // Create the ECS
-  WXR_Scene *scene = wxr_create_scene();
+fn main() {
+    let mut scene = Scene::new();
+    scene.register_callback_logger(file_logger);
 
-  // Load standard library
-  wxr_load_plugin(scene, "path/to/standard_library.so");
+    scene
+        .load_plugin("./libwasserxr_core.so".to_owned())
+        .expect("Failed to load core plugin");
 
-  // Initialize some standard entities and components
-  WXR_Entity console = wxr_add_entity(scene);
-  wxr_add_component(scene, console, "WXR_Console");
+    scene
+        .add_system("console".to_owned(), 100)
+        .expect("Failed to add system `console`");
 
-  WXR_Entity window = wxr_add_entity(scene);
-  wxr_add_component(scene, window, "WXR_Window");
-
-  WXR_Entity camera = wxr_add_entity(scene);
-  wxr_add_component(scene, camera, "WXR_Camera");
-  wxr_add_component(scene, camera, "WXR_Transform");
-
-  // Initialize some standard systems
-  wxr_add_system(scene, "wxr_console_system", 100);
-
-  wxr_add_system(scene, "wxr_window_pre_renderer", 50);
-  wxr_add_system(scene, "wxr_window_post_renderer", 150);
-
-  wxr_add_system(scene, "wxr_window_quiter", 200);
-
-  wxr_add_system(scene, "wxr_window_reloader", 100);
-
-  wxr_add_system(scene, "wxr_mesh_renderer", 100);
-
-  // Main Game Loop
-  while (wxr_tick_scene(scene)) {
-  }
-
-  // Clean Up
-  wxr_destroy_scene(scene);
+    while scene.tick() {}
+    let _ = scene.reset();
 }
 ```
 
-Now, you need to compile the project
+Before running the project, download the latest
+[WasserXR-Core Plugin](https://github.com/LarsZauberer/WasserXR-Core/tags)
+version from GitHub and put the `.so` file for Linux in your project directory.
 
-<Tabs syncKey="build-c">
-<TabItem label="GCC">
-
-To compile the project with
-[GCC](https://en.wikipedia.org/wiki/GNU_Compiler_Collection) you can run the
-following command
+When running this with
 
 ```bash
-gcc -Ipath/to/includes -Lpath/to/WasserXR-Library -lwasserxr_ecs -o main main.c
+cargo run
 ```
 
-</TabItem>
-
-<TabItem label="CMake">
-
-To compile the project with [CMake](https://cmake.org/) you can use something
-like the following
-
-```cmake
-cmake_minimum_required(VERSION 3.10)
-project(MyProject LANGUAGES C)
-
-add_executable(main main.c)
-target_include_directories(main PRIVATE path/to/WasserXR-include)
-target_link_libraries(main PRIVATE wasserxr_ecs)
-```
-
-You can then run
-
-```bash
-cmake -S . -B build
-
-cmake --build build
-```
+you should see a terminal user interface (TUI). In the next chapters, we will
+see what you can do with it.
 
 </TabItem>
 </Tabs>
-
-</TabItem>
-</Tabs>
-
-## Result
-
-When everything worked, you should see a black Window without anything
-happening. This is what we want. This is the empty canvas where the game will be
-created.
-
-## Next Step
-
-To continue it is recommended that you get familiar with WasserXR's
-[ECS](/getting_started/ecs/why-ecs). This will teach you how to code with WasserXR

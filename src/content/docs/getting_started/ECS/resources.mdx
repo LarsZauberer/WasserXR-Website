@@ -1,0 +1,53 @@
+---
+title: Resources
+description: Resources in the ECS
+sidebar:
+  order: 7
+---
+
+import { Aside, Tabs, TabItem } from "@astrojs/starlight/components";
+
+A resource is a WasserXR extension, not a classic ECS concept.
+
+In WasserXR, a resource is named data stored directly on the
+[scene](/getting_started/ecs/scene). It stays alive for the whole application
+run unless you drop the scene. Resources are not hot-reloaded.
+
+<Aside type="caution" title="When to use" icon="warning">
+
+Be careful when using resources. Do not overuse them. They work against the
+modularity and hot-reloadability that WasserXR is designed for.
+
+Still, they are useful for application-wide state that should not hot-reload.
+If the data belongs to one entity, use a
+[component](/getting_started/ecs/components) instead.
+
+</Aside>
+
+## Usage
+
+<Tabs syncKey="lang">
+<TabItem label="Rust">
+
+You can create a resource by running:
+
+```rust
+let _ = scene.add_resource::<usize>("my_resource_key_name".to_owned(), 5);
+```
+
+To access the resource, use the same key and the same Rust type:
+
+```rust
+let res: Result<&usize, SceneError> = scene.get_resource::<usize>("my_resource_key_name");
+let res: Result<&mut usize, SceneError> = scene.get_mut_resource::<usize>("my_resource_key_name");
+```
+
+</TabItem>
+</Tabs>
+
+<Aside type="caution" title="Resource Naming" icon="warning">
+
+The naming of resources is global and not bound to any plugin. Be careful when
+naming resources so they do not interfere with resources from other plugins.
+
+</Aside>
