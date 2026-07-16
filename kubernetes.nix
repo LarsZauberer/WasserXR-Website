@@ -33,6 +33,14 @@ in
             image = config.docker.images.website.path;
             ports = [ { port = 80; } ];
             replicas = 3;
+            livenessProbe = {
+              path = "/";
+              port = 80;
+            };
+            startupProbe = {
+              path = "/";
+              port = 80;
+            };
           })
           (clusterLib.createService {
             name = "website";
