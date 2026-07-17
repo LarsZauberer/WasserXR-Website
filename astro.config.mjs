@@ -1,35 +1,55 @@
 // @ts-check
-import { defineConfig } from 'astro/config';
-import starlight from '@astrojs/starlight';
+import { defineConfig } from "astro/config";
+import starlight from "@astrojs/starlight";
 
 // https://astro.build/config
 export default defineConfig({
-	integrations: [
-		starlight({
-			title: 'WasserXR',
-			customCss: ['./src/styles/custom.css'],
-			social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/LarsZauberer/WasserXR' }, {icon: "discord", label: "Discord", href: "https://discord.gg/XcjBZn5pHy"}],
-			sidebar: [
-				{
-					label: 'Getting Started',
-					items: [
-						{ slug: 'getting_started/setup' },
-						{
-							label: 'ECS',
-							autogenerate: { directory: 'getting_started/ECS' },
-						},
-						{ slug: 'getting_started/logging' },
-					],
-				},
+  integrations: [
+    starlight({
+      title: "WasserXR",
+      customCss: ["./src/styles/custom.css"],
+      social: [
         {
-          label: 'WasserXR-Core',
+          icon: "github",
+          label: "GitHub",
+          href: "https://github.com/LarsZauberer/WasserXR",
+        },
+        {
+          icon: "discord",
+          label: "Discord",
+          href: "https://discord.gg/Eyq7ccd99Z",
+        },
+      ],
+      sidebar: [
+        {
+          label: "Getting Started",
           items: [
-            {label: 'Components', autogenerate: {directory: 'wasserxr-core/components'}},
-            {label: 'Systems', autogenerate: {directory: 'wasserxr-core/systems'}},
-            {label: 'Asset Types', autogenerate: {directory: 'wasserxr-core/assets'}}
-          ]
-        }
-			],
-		}),
-	],
+            { slug: "getting_started/setup" },
+            {
+              label: "ECS",
+              autogenerate: { directory: "getting_started/ECS" },
+            },
+            { slug: "getting_started/logging" },
+          ],
+        },
+        {
+          label: "WasserXR-Core",
+          items: [
+            {
+              label: "Components",
+              autogenerate: { directory: "wasserxr-core/components" },
+            },
+            {
+              label: "Systems",
+              autogenerate: { directory: "wasserxr-core/systems" },
+            },
+            {
+              label: "Asset Types",
+              autogenerate: { directory: "wasserxr-core/assets" },
+            },
+          ],
+        },
+      ],
+    }),
+  ],
 });
